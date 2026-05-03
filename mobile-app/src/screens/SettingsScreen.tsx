@@ -68,12 +68,14 @@ export function SettingsScreen() {
   const [allowMetered, setAllowMetered] = useState<boolean>(false);
   const [allowMobile, setAllowMobile] = useState<boolean>(false);
   const [batteryExempt, setBatteryExempt] = useState<boolean>(false);
+  const [externalControl, setExternalControl] = useState<boolean>(false);
   useEffect(() => {
     try {
       setWifiOnly(GoBridge.getWifiOnlySync());
       setChargingOnly(GoBridge.getChargingOnlySync());
       setAllowMetered(GoBridge.getAllowMeteredWifi());
       setAllowMobile(GoBridge.getAllowMobileData());
+      setExternalControl(GoBridge.getExternalControlEnabled());
     } catch {
       // ignore - stays false
     }
@@ -114,6 +116,34 @@ export function SettingsScreen() {
       Alert.alert('Could not change setting', e instanceof Error ? e.message : String(e));
       setChargingOnly(!value);
     }
+  };
+
+  const writeExternalControl = (next: boolean) => {
+    try {
+      const persisted = GoBridge.setExternalControlEnabled(next);
+      setExternalControl(persisted);
+    } catch (e) {
+      Alert.alert('Could not change setting', e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const toggleExternalControl = (value: boolean) => {
+    if (value) {
+      Alert.alert(
+        'Allow external control?',
+        'Any app on this device will be able to start, stop, or rescan SyncUp via broadcast intents. Useful with Tasker / MacroDroid; leave off if you do not need automation.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Enable',
+            style: 'destructive',
+            onPress: () => writeExternalControl(true),
+          },
+        ],
+      );
+      return;
+    }
+    writeExternalControl(false);
   };
 
   const openBatterySettings = () => {
@@ -348,6 +378,25 @@ export function SettingsScreen() {
           <TouchableOpacity style={styles.button} onPress={openBatterySettings}>
             <Text style={styles.buttonText}>Battery optimization settings</Text>
           </TouchableOpacity>
+        </Card>
+      )}
+
+      {isAndroid && (
+        <Card>
+          <CardTitle>Automation</CardTitle>
+          <View style={styles.switchRow}>
+            <View style={{ flex: 1, paddingRight: 12 }}>
+              <Text style={styles.switchLabel}>Allow external control</Text>
+              <Text style={styles.switchHint}>
+                Off by default. When on, Tasker / MacroDroid / any installed app can fire START, STOP, or RESCAN broadcast intents. There is no per-app authorization beyond this toggle.
+              </Text>
+            </View>
+            <Switch
+              value={externalControl}
+              onValueChange={toggleExternalControl}
+              trackColor={{ false: colors.border, true: colors.accent }}
+            />
+          </View>
         </Card>
       )}
 

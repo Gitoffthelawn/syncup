@@ -280,6 +280,29 @@ class GoServerBridgeModule(reactContext: ReactApplicationContext) :
         )
     }
 
+    // Persist the JS-side vault registry into SharedPreferences and ask the
+    // foreground service to rebuild its notification. iOS sends a fresh
+    // local notification when a vault goes stale; Android instead surfaces
+    // "N vaults stale" in the persistent service notification — same data,
+    // different transport, matching each platform's notification idioms.
+    override fun setVaultRegistry(json: String) {
+        try {
+            VaultRegistry.setPayload(ctx, json)
+            SyncthingService.refreshNotification(ctx)
+        } catch (e: Exception) {
+            android.util.Log.w(NAME, "setVaultRegistry failed", e)
+        }
+    }
+
+    override fun getExternalControlEnabled(): Boolean {
+        return SyncthingPrefs.getExternalControlEnabled(ctx)
+    }
+
+    override fun setExternalControlEnabled(enabled: Boolean): Boolean {
+        SyncthingPrefs.setExternalControlEnabled(ctx, enabled)
+        return SyncthingPrefs.getExternalControlEnabled(ctx)
+    }
+
     override fun pickExternalFolder(): String {
         // Launch the system SAF folder picker synchronously from the JS thread.
         // We use SAFPickerHelper which is registered on the Activity and blocks

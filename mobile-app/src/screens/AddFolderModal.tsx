@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { FormModal } from '../components/FormModal';
 import { Field } from '../components/Field';
 import { colors } from '../components/ui';
@@ -11,6 +11,12 @@ import {
   filesystemTypeForExternal,
   pickExternalFolderWithICloudWarning,
 } from '../fs/externalFolder';
+import {
+  applyPresetToFolder,
+  presetDefaults,
+  type FolderPreset,
+} from '../utils/folderPresets';
+import { markAsVault } from '../utils/vaultRegistry';
 
 const FOLDER_ID_RE = /^[a-z0-9][a-z0-9-_.]*$/;
 
@@ -52,6 +58,7 @@ export function AddFolderModal({ visible, onClose, onAdded }: Props) {
   const [selectedPeers, setSelectedPeers] = useState<Set<string>>(new Set());
   const [folderType, setFolderType] = useState<FolderConfig['type']>('sendreceive');
 
+  const [preset, setPreset] = useState<FolderPreset>('generic');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -114,6 +121,7 @@ export function AddFolderModal({ visible, onClose, onAdded }: Props) {
     setIdDirty(false);
     setSelectedPeers(new Set());
     setFolderType('sendreceive');
+    setPreset('generic');
     setShowAdvanced(false);
     setError(null);
     setSubmitting(false);
@@ -152,7 +160,7 @@ export function AddFolderModal({ visible, onClose, onAdded }: Props) {
       // works and we can stay on the slower default rescan cadence.
       const fsType = isExternal ? filesystemTypeForExternal() : 'basic';
       const usesSaf = fsType === 'saf';
-      const folder: FolderConfig = {
+      const baseFolder: FolderConfig = {
         id: effectiveId,
         label: effectiveLabel,
         filesystemType: fsType,
@@ -180,7 +188,22 @@ export function AddFolderModal({ visible, onClose, onAdded }: Props) {
           fsType: 'basic',
         },
       };
+      const folder = applyPresetToFolder(baseFolder, preset, { isSaf: usesSaf });
       await client.putFolder(folder);
+      const presetIgnores = presetDefaults(preset).ignoreLines;
+      if (presetIgnores.length > 0) {
+        // Best-effort: a preset that fails to seed ignores is still a usable
+        // folder, just noisier. Surface nothing — the ignores editor lets
+        // the user re-apply manually.
+        try {
+          await client.setIgnores(folder.id, presetIgnores);
+        } catch {
+          // ignore
+        }
+      }
+      if (preset === 'obsidian') {
+        markAsVault(folder.id).catch(() => {});
+      }
       reset();
       onAdded();
       onClose();
@@ -245,6 +268,52 @@ export function AddFolderModal({ visible, onClose, onAdded }: Props) {
             <SummaryRow label="Label" value={effectiveLabel} />
             <SummaryRow label="ID" value={effectiveId} />
           </View>
+        )}
+
+        {path && (
+          <>
+            <Text style={[styles.sectionLabel, { marginTop: 20 }]}>Folder kind</Text>
+            <View style={styles.presetRow}>
+              <PresetChip
+                label="Generic"
+                hint="Default settings"
+                active={preset === 'generic'}
+                onPress={() => setPreset('generic')}
+              />
+              <PresetChip
+                label="Obsidian vault"
+                hint="Watcher on, vault ignores"
+                active={preset === 'obsidian'}
+                onPress={() => setPreset('obsidian')}
+              />
+            </View>
+            {preset === 'obsidian' &&
+              Platform.OS === 'android' &&
+              !isExternal &&
+              pickerRoot &&
+              !path.toLowerCase().includes('/obsidian/') &&
+              !path.toLowerCase().endsWith('/obsidian') && (
+                <View style={styles.obsidianHint}>
+                  <Text style={styles.obsidianHintText}>
+                    Obsidian's Android vault picker is narrower than iOS's. Placing the folder
+                    under <Text style={styles.mono}>Obsidian/</Text> in app storage makes it
+                    reliably visible.
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.obsidianHintBtn}
+                    onPress={() => {
+                      const slug = slugify(label || basename(path) || 'vault') || 'vault';
+                      const root = pickerRoot.endsWith('/') ? pickerRoot.slice(0, -1) : pickerRoot;
+                      setPath(`${root}/Obsidian/${slug}`);
+                    }}
+                  >
+                    <Text style={styles.obsidianHintBtnText}>
+                      Use Obsidian/{slugify(label || basename(path) || 'vault') || 'vault'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+          </>
         )}
 
         {peerDevices.length > 0 && (
@@ -336,6 +405,32 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+function PresetChip({
+  label,
+  hint,
+  active,
+  onPress,
+}: {
+  label: string;
+  hint: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity
+      style={[styles.presetChip, active && styles.presetChipOn]}
+      onPress={onPress}
+    >
+      <Text style={[styles.presetChipLabel, active && styles.presetChipLabelOn]}>
+        {label}
+      </Text>
+      <Text style={[styles.presetChipHint, active && styles.presetChipHintOn]}>
+        {hint}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
 const styles = StyleSheet.create({
   sectionLabel: {
     color: colors.textDim,
@@ -417,4 +512,43 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   error: { color: colors.error, fontSize: 13, marginTop: 8 },
+  presetRow: { flexDirection: 'row', gap: 10 },
+  presetChip: {
+    flex: 1,
+    backgroundColor: colors.card,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+  },
+  presetChipOn: { borderColor: colors.accent, backgroundColor: colors.card },
+  presetChipLabel: { color: colors.text, fontSize: 14, fontWeight: '600' },
+  presetChipLabelOn: { color: colors.accent },
+  presetChipHint: { color: colors.textDim, fontSize: 11, marginTop: 4 },
+  presetChipHintOn: { color: colors.textDim },
+  obsidianHint: {
+    backgroundColor: colors.card,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 12,
+    marginTop: 10,
+    gap: 8,
+  },
+  obsidianHintText: {
+    color: colors.textDim,
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  mono: { fontFamily: 'Menlo', color: colors.text },
+  obsidianHintBtn: {
+    alignSelf: 'flex-start',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.accent,
+  },
+  obsidianHintBtnText: { color: colors.accent, fontSize: 12, fontWeight: '600' },
 });

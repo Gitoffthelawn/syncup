@@ -41,6 +41,9 @@ public:
                                  double count,
                                  facebook::jsi::String label,
                                  facebook::jsi::String sampleError);
+    void setVaultRegistry(facebook::jsi::Runtime &rt, facebook::jsi::String json);
+    bool getExternalControlEnabled(facebook::jsi::Runtime &rt);
+    bool setExternalControlEnabled(facebook::jsi::Runtime &rt, bool enabled);
     // External (user-picked) folder access. Cross-platform; on Android backed
     // by SAF, on iOS by UIDocumentPicker + security-scoped bookmarks.
     facebook::jsi::String pickExternalFolder(facebook::jsi::Runtime &rt);

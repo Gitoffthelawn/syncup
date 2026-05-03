@@ -10,6 +10,7 @@ object SyncthingPrefs {
     private const val KEY_CHARGING_ONLY_SYNC = "charging_only_sync"
     private const val KEY_ALLOW_METERED_WIFI = "allow_metered_wifi"
     private const val KEY_ALLOW_MOBILE_DATA = "allow_mobile_data"
+    private const val KEY_EXTERNAL_CONTROL = "external_control_enabled"
 
     private fun prefs(context: Context): SharedPreferences =
         context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -40,5 +41,16 @@ object SyncthingPrefs {
 
     fun setAllowMobileData(context: Context, value: Boolean) {
         prefs(context).edit().putBoolean(KEY_ALLOW_MOBILE_DATA, value).apply()
+    }
+
+    // Default OFF. Once enabled, ANY app on the device can fire
+    // START/STOP/RESCAN broadcasts at AppConfigReceiver — there is no
+    // per-caller authorization. Treat this toggle as informed-consent
+    // rather than a strong security boundary.
+    fun getExternalControlEnabled(context: Context): Boolean =
+        prefs(context).getBoolean(KEY_EXTERNAL_CONTROL, false)
+
+    fun setExternalControlEnabled(context: Context, value: Boolean) {
+        prefs(context).edit().putBoolean(KEY_EXTERNAL_CONTROL, value).apply()
     }
 }

@@ -56,6 +56,49 @@ class SyncthingService : Service() {
                 context.startService(intent)
             }
         }
+
+        // Rebuild the persistent notification — used after the vault
+        // registry changes so "N vaults stale" stays accurate. Best-effort:
+        // if the service isn't running we just skip; the next
+        // promoteToForeground() will pick up the latest state.
+        fun refreshNotification(context: Context) {
+            val nm = context.getSystemService(NOTIFICATION_SERVICE) as? NotificationManager
+                ?: return
+            try {
+                nm.notify(NOTIFICATION_ID, buildNotificationStandalone(context))
+            } catch (e: Exception) {
+                Log.w(TAG, "refreshNotification failed", e)
+            }
+        }
+
+        // Mirrors buildNotification() but without the receiver context for
+        // refreshes that fire from outside the service (the bridge module).
+        private fun buildNotificationStandalone(ctx: Context): Notification {
+            val launchIntent = Intent(ctx, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            }
+            val pending = PendingIntent.getActivity(
+                ctx, 0, launchIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+            val stale = VaultRegistry.staleCount(ctx)
+            val text = if (stale > 0) {
+                if (stale == 1) "1 vault hasn't synced recently"
+                else "$stale vaults haven't synced recently"
+            } else {
+                "Syncing in background"
+            }
+            return NotificationCompat.Builder(ctx, CHANNEL_ID)
+                .setContentTitle("Syncthing")
+                .setContentText(text)
+                .setSmallIcon(android.R.drawable.stat_notify_sync)
+                .setOngoing(true)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setShowWhen(false)
+                .setContentIntent(pending)
+                .setCategory(NotificationCompat.CATEGORY_SERVICE)
+                .build()
+        }
     }
 
     private val mobileAPI = MobileAPI()
@@ -307,27 +350,7 @@ class SyncthingService : Service() {
         nm.createNotificationChannel(channel)
     }
 
-    private fun buildNotification(): Notification {
-        val launchIntent = Intent(this, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-        }
-        val pending = PendingIntent.getActivity(
-            this,
-            0,
-            launchIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
-        return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Syncthing")
-            .setContentText("Syncing in background")
-            .setSmallIcon(android.R.drawable.stat_notify_sync)
-            .setOngoing(true)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setShowWhen(false)
-            .setContentIntent(pending)
-            .setCategory(NotificationCompat.CATEGORY_SERVICE)
-            .build()
-    }
+    private fun buildNotification(): Notification = buildNotificationStandalone(this)
 
     private fun promoteToForeground() {
         val notification = buildNotification()
