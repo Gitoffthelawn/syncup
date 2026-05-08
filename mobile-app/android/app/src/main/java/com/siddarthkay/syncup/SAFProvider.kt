@@ -3,9 +3,11 @@ package com.siddarthkay.syncup
 import android.content.Context
 import android.database.ContentObserver
 import android.net.Uri
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.ParcelFileDescriptor
+import android.os.storage.StorageManager
 import android.provider.DocumentsContract
 import android.util.LruCache
 import org.json.JSONArray
@@ -218,9 +220,26 @@ class SAFProvider(private val ctx: Context) : gobridge.SAFBridge {
     // ---- UsageJSON ----
 
     override fun usageJSON(treeURI: String): String {
-        // StatFs doesn't work on content:// URIs. Return zeros and let syncthing
-        // fall back to its default disk-full check.
-        return JSONObject().put("Free", 0L).put("Total", 0L).toString()
+        // Resolve the SAF tree URI back to its underlying volume so we can
+        // report real free/total bytes. StorageVolume.getDirectory() is API 30+;
+        // on older Android (or any failure) we report effectively-infinite space
+        // so syncthing's pre-write disk check doesn't refuse the sync. Real
+        // ENOSPC will still surface through the write path.
+        var free = Long.MAX_VALUE
+        var total = Long.MAX_VALUE
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+                val sm = ctx.getSystemService(Context.STORAGE_SERVICE) as StorageManager
+                val dir = sm.getStorageVolume(Uri.parse(treeURI))?.directory
+                if (dir != null) {
+                    free = dir.freeSpace
+                    total = dir.totalSpace
+                }
+            } catch (_: Exception) {
+                // Fall through to the infinite-space sentinel.
+            }
+        }
+        return JSONObject().put("Free", free).put("Total", total).toString()
     }
 
     // ---- WalkJSON ----
