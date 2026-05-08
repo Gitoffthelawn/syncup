@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/syncthing/syncthing/lib/fs"
@@ -25,10 +26,17 @@ func init() {
 // Framework. Metadata operations delegate to SAFBridge (JNI); data I/O uses
 // file descriptors for zero-copy throughput.
 type safFilesystem struct {
-	treeURI    string
-	bridge     SAFBridge
-	options    []fs.Option
-	cacheReady bool // set after first Walk warms the Kotlin-side doc ID cache
+	treeURI string
+	bridge  SAFBridge
+	options []fs.Option
+
+	// recentDir is a one-slot look-aside for the most recently listed
+	// directory. syncthing's scanner pattern is DirNames(p) -> Lstat(p/X)
+	// for every X, microseconds apart, so caching the listing's stat data
+	// lets every per-child Lstat skip its Binder roundtrip.
+	recentMu      sync.Mutex
+	recentDir     string
+	recentEntries map[string]safStatJSON
 }
 
 func newSAFFilesystem(uri string, opts ...fs.Option) (fs.Filesystem, error) {
@@ -50,6 +58,28 @@ func (f *safFilesystem) Options() []fs.Option    { return f.options }
 
 func (f *safFilesystem) stat(name string) (safStatJSON, error) {
 	name = cleanRel(name)
+
+	// Fast path: if this is a child of the most recently listed directory,
+	// the stat data is already in memory from DirNames. The scanner's walk
+	// loop hits this for every file, eliminating one Binder roundtrip each.
+	if name != "" {
+		parent := filepath.Dir(name)
+		if parent == "." {
+			parent = ""
+		}
+		base := filepath.Base(name)
+		f.recentMu.Lock()
+		if f.recentDir == parent && f.recentEntries != nil {
+			if cached, ok := f.recentEntries[base]; ok {
+				f.recentMu.Unlock()
+				cached.Name = base
+				cached.Exists = true
+				return cached, nil
+			}
+		}
+		f.recentMu.Unlock()
+	}
+
 	raw, err := f.bridge.StatJSON(f.treeURI, name)
 	if err != nil {
 		return safStatJSON{}, err
@@ -182,6 +212,18 @@ func (f *safFilesystem) DirNames(name string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Cache this listing's stat data so the scanner's per-child Lstat
+	// calls (which immediately follow DirNames) hit memory instead of SAF.
+	cache := make(map[string]safStatJSON, len(entries))
+	for _, e := range entries {
+		cache[e.Name] = e
+	}
+	f.recentMu.Lock()
+	f.recentDir = name
+	f.recentEntries = cache
+	f.recentMu.Unlock()
+
 	names := make([]string, 0, len(entries))
 	for _, e := range entries {
 		names = append(names, e.Name)
@@ -225,35 +267,11 @@ func (f *safFilesystem) ReadSymlink(_ string) (string, error)     { return "", f
 
 // --- Walk ---
 
-func (f *safFilesystem) Walk(name string, walkFn fs.WalkFunc) error {
-	name = cleanRel(name)
-	// WalkJSON populates the Kotlin-side doc ID cache as a side effect.
-	// Mark cache as ready after the first walk so subsequent stat/open
-	// calls hit the warm cache instead of walking the tree per-path.
-	raw, err := f.bridge.WalkJSON(f.treeURI, name)
-	if err != nil {
-		return err
-	}
-	f.cacheReady = true
-	entries, err := parseStatList(raw)
-	if err != nil {
-		return err
-	}
-	// sort to get deterministic walk order (parent before children)
-	sort.Slice(entries, func(i, j int) bool {
-		return entries[i].Name < entries[j].Name
-	})
-	for _, e := range entries {
-		fi := newSAFFileInfo(e)
-		if err := walkFn(e.Name, fi, nil); err != nil {
-			if err == fs.SkipDir {
-				// skip this subtree
-				continue
-			}
-			return err
-		}
-	}
-	return nil
+// Walk is implemented by syncthing's WalkFilesystem wrapper, which traverses
+// the tree via Lstat + DirNames recursion. The wrapper never calls down into
+// this method, so it stays a stub — same shape as BasicFilesystem.Walk.
+func (*safFilesystem) Walk(_ string, _ fs.WalkFunc) error {
+	return errors.New("not implemented")
 }
 
 // --- Watch ---

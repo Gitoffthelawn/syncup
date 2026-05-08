@@ -7,7 +7,7 @@ import (
 	"github.com/syncthing/syncthing/lib/fs"
 )
 
-// safStatJSON is the JSON shape returned by SAFBridge.StatJSON / WalkJSON.
+// safStatJSON is the JSON shape returned by SAFBridge.StatJSON.
 type safStatJSON struct {
 	Name      string `json:"name"`
 	Size      int64  `json:"size"`

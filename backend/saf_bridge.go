@@ -37,11 +37,6 @@ type SAFBridge interface {
 	// UsageJSON returns JSON: {"free","total"} in bytes.
 	UsageJSON(treeURI string) (string, error)
 
-	// WalkJSON returns a JSON array of all entries recursively under relativePath.
-	// Each entry: {"name","size","modTimeMs","isDir"}
-	// name is the full relative path from the tree root.
-	WalkJSON(treeURI string, relativePath string) (string, error)
-
 	// GetDisplayName returns a user-friendly name for the tree URI
 	// (e.g. "SD Card" or "Internal storage / Documents").
 	GetDisplayName(treeURI string) (string, error)

@@ -202,35 +202,6 @@ func (m *mockSAFBridge) UsageJSON(treeURI string) (string, error) {
 	return `{"Free":1073741824,"Total":2147483648}`, nil
 }
 
-func (m *mockSAFBridge) WalkJSON(treeURI, relativePath string) (string, error) {
-	prefix := relativePath
-	if prefix != "" {
-		prefix += "/"
-	}
-	var entries []map[string]interface{}
-	for k, f := range m.files {
-		parts := strings.SplitN(k, "\n", 2)
-		if parts[0] != treeURI {
-			continue
-		}
-		relPath := parts[1]
-		if relPath == relativePath {
-			continue
-		}
-		if relativePath != "" && !strings.HasPrefix(relPath, prefix) {
-			continue
-		}
-		entries = append(entries, map[string]interface{}{
-			"name":      relPath,
-			"size":      f.size,
-			"modTimeMs": f.modTimeMs,
-			"isDir":     f.isDir,
-		})
-	}
-	b, _ := json.Marshal(entries)
-	return string(b), nil
-}
-
 func (m *mockSAFBridge) GetDisplayName(treeURI string) (string, error) {
 	return "Mock Storage", nil
 }
