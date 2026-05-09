@@ -69,6 +69,12 @@ yarn-error.*
 /backend/*.aar
 /backend/*.xcframework
 
+# Local syncthing source mirror. Created by `make gen-assets` so we can
+# drop the generated GUI assets file (gui.files.go) into its package — Go
+# enforces module-cache integrity and rejects in-place edits there, and
+# upstream syncthing's repo doesn't ship the generated file.
+/backend/syncthing-fork/
+
 # IDEs
 .vscode/
 .idea/

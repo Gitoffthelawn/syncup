@@ -4,6 +4,13 @@ go 1.25.0
 
 replace github.com/gobwas/glob v0.2.3 => github.com/calmh/glob v0.0.0-20220615080505-1d823af5017b
 
+// Local copy of syncthing with the bundled web GUI assets generated into
+// lib/api/auto/gui.files.go. Upstream only ships the noassets stub, so the
+// daemon's GUI URL would otherwise serve an empty <html></html> body
+// (siddarthkay/syncup#20). The fork directory is gitignored — `make setup`
+// (or `make gen-assets`) creates it from $GOPATH/pkg/mod and runs go-generate.
+replace github.com/syncthing/syncthing => ./syncthing-fork
+
 require github.com/syncthing/syncthing v1.30.0-rc.1.0.20260211104138-dc2a77ab8e5b
 
 require (

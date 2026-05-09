@@ -16,6 +16,7 @@ import { formatEvent } from '../daemon/formatEvent';
 import { RecentChangesModal } from './RecentChangesModal';
 import { TransfersModal } from './TransfersModal';
 import { ShowDeviceQRModal } from './ShowDeviceQRModal';
+import { WebGuiModal } from './WebGuiModal';
 import {
   Card,
   CardTitle,
@@ -27,12 +28,23 @@ import {
 } from '../components/ui';
 import { Icon } from '../components/Icon';
 
+// Wildcard listen hosts (0.0.0.0, [::], or empty) aren't browseable from the
+// device itself — swap them for loopback so Linking.openURL lands somewhere.
+function webGuiUrl(addr: string): string {
+  const normalized = addr
+    .replace(/^0\.0\.0\.0:/, '127.0.0.1:')
+    .replace(/^\[::\]:/, '[::1]:')
+    .replace(/^:(\d)/, '127.0.0.1:$1');
+  return `http://${normalized}`;
+}
+
 export function StatusScreen() {
   const { info, client, error: daemonError } = useSyncthing();
   const { changes: recentChanges } = useRecentChanges();
   const [recentChangesOpen, setRecentChangesOpen] = useState(false);
   const [transfersOpen, setTransfersOpen] = useState(false);
   const [showQR, setShowQR] = useState(false);
+  const [webGuiOpen, setWebGuiOpen] = useState(false);
 
   const fetcher = useCallback(async () => {
     if (!client) throw new Error('daemon not ready');
@@ -129,10 +141,21 @@ export function StatusScreen() {
         <Row label="Port" value={String(info.port)} />
         <Row label="GUI address" value={info.guiAddress} />
         <Row label="Device ID" value={info.deviceId} mono multiline />
+        <TouchableOpacity style={styles.qrBtn} onPress={() => setWebGuiOpen(true)}>
+          <Text style={styles.qrBtnText}>Open web GUI</Text>
+        </TouchableOpacity>
         <TouchableOpacity style={styles.qrBtn} onPress={() => setShowQR(true)}>
           <Text style={styles.qrBtnText}>Show QR code</Text>
         </TouchableOpacity>
       </Card>
+
+      {webGuiOpen && (
+        <WebGuiModal
+          visible
+          url={webGuiUrl(info.guiAddress)}
+          onClose={() => setWebGuiOpen(false)}
+        />
+      )}
 
       <ShowDeviceQRModal
         visible={showQR}
