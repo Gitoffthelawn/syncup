@@ -5,6 +5,7 @@ import { Field } from '../components/Field';
 import { colors } from '../components/ui';
 import { useSyncthing, useSyncthingClient } from '../daemon/SyncthingContext';
 import type { DeviceConfig, FolderConfig } from '../api/types';
+import { isAbortError } from '../api/syncthing';
 import { FolderPicker } from './FolderPicker';
 import { FolderTypePicker } from '../components/FolderTypePicker';
 import {
@@ -189,7 +190,21 @@ export function AddFolderModal({ visible, onClose, onAdded }: Props) {
         },
       };
       const folder = applyPresetToFolder(baseFolder, preset, { isSaf: usesSaf });
-      await client.putFolder(folder);
+      try {
+        await client.putFolder(folder);
+      } catch (e) {
+        // putFolder holds the HTTP response open until syncthing finishes
+        // synchronous folder startup (load ignores, CheckPath/CreateMarker,
+        // construct runner). For a very large pre-existing SAF folder this
+        // can occasionally exceed even the 120s timeout we set on the call.
+        // On abort, poll the folders list to verify whether the operation
+        // actually completed before declaring failure.
+        if (!isAbortError(e)) throw e;
+        const created = await client.waitForFolder(folder.id, { deadlineMs: 60_000 });
+        if (!created) {
+          throw new Error('Adding the folder timed out. Please try again.');
+        }
+      }
       const presetIgnores = presetDefaults(preset).ignoreLines;
       if (presetIgnores.length > 0) {
         // Best-effort: a preset that fails to seed ignores is still a usable

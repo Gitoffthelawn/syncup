@@ -33,6 +33,14 @@ export class SyncthingApiError extends Error {
   }
 }
 
+// Detects the AbortController-driven timeout we wrap fetch with. The
+// underlying DOMException's name is 'AbortError' and message is 'Aborted',
+// which gets re-wrapped as a SyncthingApiError with the message preserved.
+export function isAbortError(e: unknown): boolean {
+  if (!(e instanceof Error)) return false;
+  return e.message === 'Aborted' || e.name === 'AbortError';
+}
+
 export interface SyncthingClientOptions {
   guiAddress: string;
   apiKey: string;
@@ -50,9 +58,10 @@ export class SyncthingClient {
     this.timeoutMs = timeoutMs;
   }
 
-  private async request<T>(path: string, init?: RequestInit): Promise<T> {
+  private async request<T>(path: string, init?: RequestInit & { timeoutMs?: number }): Promise<T> {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), this.timeoutMs);
+    const timeoutMs = init?.timeoutMs ?? this.timeoutMs;
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
     const url = `${this.baseUrl}${path}`;
     try {
       const res = await fetch(url, {
@@ -149,10 +158,40 @@ export class SyncthingClient {
   }
 
   putFolder(folder: FolderConfig) {
+    // syncthing holds the HTTP response open until the new folder finishes
+    // its synchronous startup (load ignores, CheckPath/CreateMarker, build
+    // runner). On Android with SAF for a large existing folder this can
+    // take 10-30s on first add — well past the default 8s timeout. Use a
+    // generous timeout so the request doesn't abort mid-setup, which would
+    // surface as a misleading "Aborted" error in the UI even though the
+    // folder was actually created.
     return this.request<void>(`/rest/config/folders/${encodeURIComponent(folder.id)}`, {
       method: 'PUT',
       body: JSON.stringify(folder),
+      timeoutMs: 120_000,
     });
+  }
+
+  // Polls the folders list until folderId appears, or the deadline elapses.
+  // Use after a putFolder that aborted client-side: the server may still be
+  // working through synchronous startup, so before declaring failure we
+  // verify whether the folder actually got registered.
+  async waitForFolder(
+    folderId: string,
+    opts: { deadlineMs?: number; intervalMs?: number } = {},
+  ): Promise<boolean> {
+    const deadline = Date.now() + (opts.deadlineMs ?? 60_000);
+    const interval = opts.intervalMs ?? 1_500;
+    while (Date.now() < deadline) {
+      try {
+        const folders = await this.folders();
+        if (folders.some(f => f.id === folderId)) return true;
+      } catch {
+        // Transient fetch failure — keep polling until the deadline.
+      }
+      await new Promise(r => setTimeout(r, interval));
+    }
+    return false;
   }
 
   patchFolder(folderId: string, patch: Partial<FolderConfig>) {

@@ -4,6 +4,7 @@ import { FormModal } from '../components/FormModal';
 import { colors } from '../components/ui';
 import { useSyncthing, useSyncthingClient } from '../daemon/SyncthingContext';
 import type { DeviceConfig, FolderConfig, PendingFolderOffer } from '../api/types';
+import { isAbortError } from '../api/syncthing';
 import { FolderPicker } from './FolderPicker';
 import { FolderTypePicker } from '../components/FolderTypePicker';
 import {
@@ -144,7 +145,18 @@ export function AcceptFolderModal({ visible, offer, onClose, onAccepted }: Props
         },
       };
       const folder = applyPresetToFolder(baseFolder, preset, { isSaf: usesSaf });
-      await client.putFolder(folder);
+      try {
+        await client.putFolder(folder);
+      } catch (e) {
+        // See AddFolderModal: client may abort before the syncthing-side
+        // synchronous startup finishes for a very large folder. Poll to
+        // verify before declaring failure.
+        if (!isAbortError(e)) throw e;
+        const created = await client.waitForFolder(folder.id, { deadlineMs: 60_000 });
+        if (!created) {
+          throw new Error('Accepting the folder timed out. Please try again.');
+        }
+      }
       const presetIgnores = presetDefaults(preset).ignoreLines;
       if (presetIgnores.length > 0) {
         try {
