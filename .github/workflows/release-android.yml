@@ -135,6 +135,8 @@ jobs:
         include:
           - abi: arm64-v8a
             gomobile_target: android/arm64
+          - abi: armeabi-v7a
+            gomobile_target: android/arm
           - abi: x86_64
             gomobile_target: android/amd64
     steps:
@@ -218,9 +220,10 @@ jobs:
       - name: Rename APKs by ABI + stage VERSIONCODE
         id: stage
         run: |
-          mv apks/apk-arm64-v8a/app-release.apk apks/syncup-${{ steps.version.outputs.version }}-arm64-v8a.apk
-          mv apks/apk-x86_64/app-release.apk    apks/syncup-${{ steps.version.outputs.version }}-x86_64.apk
-          mv apks/versioncode/VERSIONCODE       apks/VERSIONCODE
+          mv apks/apk-arm64-v8a/app-release.apk   apks/syncup-${{ steps.version.outputs.version }}-arm64-v8a.apk
+          mv apks/apk-armeabi-v7a/app-release.apk apks/syncup-${{ steps.version.outputs.version }}-armeabi-v7a.apk
+          mv apks/apk-x86_64/app-release.apk      apks/syncup-${{ steps.version.outputs.version }}-x86_64.apk
+          mv apks/versioncode/VERSIONCODE         apks/VERSIONCODE
           VC=$(cat apks/VERSIONCODE)
           echo "arm64-v8a versionCode: $VC"
           echo "versioncode=$VC" >> "$GITHUB_OUTPUT"
