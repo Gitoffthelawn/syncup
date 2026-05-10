@@ -21,7 +21,7 @@ jobs:
   pr-build:
     name: pr build + appdrop upload
     if: github.event_name == 'pull_request'
-    runs-on: [self-hosted, macOS]
+    runs-on: bladerunner-macos
     timeout-minutes: 60
     permissions:
       contents: read

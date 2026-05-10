@@ -81,29 +81,65 @@ platform :ios do
     )
   end
 
+  def keychain_name
+    "syncup_ci_#{ENV['GITHUB_RUN_ID'] || ENV['BUILD_NUMBER'] || 'local'}.keychain"
+  end
+
+  def keychain_password
+    ENV["MATCH_PASSWORD"]
+  end
+
+  private_lane :setup_ci_keychain do
+    if is_ci
+      create_keychain(
+        name:             keychain_name,
+        password:         keychain_password,
+        default_keychain: true,
+        unlock:           true,
+        timeout:          3600,
+        lock_when_sleeps: false,
+      )
+
+      kc_path  = File.expand_path("~/Library/Keychains/#{keychain_name}-db")
+      login_kc = File.expand_path("~/Library/Keychains/login.keychain-db")
+      sh("security", "list-keychains", "-d", "user", "-s", kc_path, login_kc)
+    end
+  end
+
+  error do
+    delete_keychain(name: keychain_name) rescue nil if is_ci
+  end
+
   desc "Sync the AdHoc cert + profile for the .pr bundle ID into the keychain."
   lane :match_pr do
-    # On CI: create an ephemeral unlocked keychain so codesign (run from the
-    # [CP] Embed Pods Frameworks build phase, in a non-interactive session)
-    # can find the identity match just installed.
-    setup_ci if ENV["CI"]
-    match(
+    setup_ci_keychain
+    params = {
       type:           "adhoc",
       app_identifier: PR_BID,
       api_key:        asc_api_key,
-      readonly:       !ENV["CI"].nil?,
-    )
+      readonly:       is_ci,
+    }
+    if is_ci
+      params[:keychain_name]     = keychain_name
+      params[:keychain_password] = keychain_password
+    end
+    match(params)
   end
 
   desc "Sync the AppStore cert + profile for the prod bundle ID into the keychain."
   lane :match_release do
-    setup_ci if ENV["CI"]
-    match(
+    setup_ci_keychain
+    params = {
       type:           "appstore",
       app_identifier: RELEASE_BID,
       api_key:        asc_api_key,
-      readonly:       !ENV["CI"].nil?,
-    )
+      readonly:       is_ci,
+    }
+    if is_ci
+      params[:keychain_name]     = keychain_name
+      params[:keychain_password] = keychain_password
+    end
+    match(params)
   end
 
   desc "Upload an already-built syncup.ipa to TestFlight."

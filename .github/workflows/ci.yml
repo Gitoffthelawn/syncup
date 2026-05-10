@@ -58,7 +58,7 @@ jobs:
   ios:
     name: ios build
     if: github.event_name == 'push'
-    runs-on: [self-hosted, macOS]
+    runs-on: bladerunner-macos
     needs: lint-and-typecheck
     timeout-minutes: 60
     steps:
