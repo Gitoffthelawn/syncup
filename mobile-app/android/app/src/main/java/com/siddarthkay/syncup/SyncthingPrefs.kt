@@ -11,6 +11,7 @@ object SyncthingPrefs {
     private const val KEY_ALLOW_METERED_WIFI = "allow_metered_wifi"
     private const val KEY_ALLOW_MOBILE_DATA = "allow_mobile_data"
     private const val KEY_EXTERNAL_CONTROL = "external_control_enabled"
+    private const val KEY_START_ON_BOOT = "start_on_boot_enabled"
 
     private fun prefs(context: Context): SharedPreferences =
         context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -52,5 +53,14 @@ object SyncthingPrefs {
 
     fun setExternalControlEnabled(context: Context, value: Boolean) {
         prefs(context).edit().putBoolean(KEY_EXTERNAL_CONTROL, value).apply()
+    }
+
+    // Default OFF. Read by BootReceiver on ACTION_BOOT_COMPLETED to decide
+    // whether to launch SyncthingService unattended.
+    fun getStartOnBoot(context: Context): Boolean =
+        prefs(context).getBoolean(KEY_START_ON_BOOT, false)
+
+    fun setStartOnBoot(context: Context, value: Boolean) {
+        prefs(context).edit().putBoolean(KEY_START_ON_BOOT, value).apply()
     }
 }

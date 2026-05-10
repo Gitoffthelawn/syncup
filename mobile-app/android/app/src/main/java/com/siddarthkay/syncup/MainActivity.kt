@@ -57,6 +57,10 @@ class MainActivity : ReactActivity() {
 
     super.onCreate(null)
     requestNotificationPermissionIfNeeded()
+    // Activity launch always grants the FGS background-start exemption, so
+    // this is a safe place to bring the daemon up. Mirrors the equivalent
+    // call in ShareReceiveActivity for cold-start via share intent.
+    SyncthingService.start(this)
   }
 
   private fun requestNotificationPermissionIfNeeded() {

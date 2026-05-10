@@ -303,6 +303,15 @@ class GoServerBridgeModule(reactContext: ReactApplicationContext) :
         return SyncthingPrefs.getExternalControlEnabled(ctx)
     }
 
+    override fun getStartOnBoot(): Boolean {
+        return SyncthingPrefs.getStartOnBoot(ctx)
+    }
+
+    override fun setStartOnBoot(enabled: Boolean): Boolean {
+        SyncthingPrefs.setStartOnBoot(ctx, enabled)
+        return SyncthingPrefs.getStartOnBoot(ctx)
+    }
+
     override fun pickExternalFolder(): String {
         // Launch the system SAF folder picker synchronously from the JS thread.
         // The picker UX is the same regardless of permission state; what changes

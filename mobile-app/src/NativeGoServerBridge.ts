@@ -53,6 +53,12 @@ export interface Spec extends TurboModule {
   readonly getExternalControlEnabled: () => boolean;
   readonly setExternalControlEnabled: (enabled: boolean) => boolean;
   /**
+   * Android-only: when true, BootReceiver starts SyncthingService after
+   * ACTION_BOOT_COMPLETED. Default false. iOS returns false unconditionally.
+   */
+  readonly getStartOnBoot: () => boolean;
+  readonly setStartOnBoot: (enabled: boolean) => boolean;
+  /**
    * Present the system folder picker. Cross-platform: Android wraps SAF
    * (`ACTION_OPEN_DOCUMENT_TREE`), iOS wraps `UIDocumentPickerViewController`
    * + security-scoped bookmarks. Returns JSON string:

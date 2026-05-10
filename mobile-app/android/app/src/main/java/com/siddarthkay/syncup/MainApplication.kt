@@ -48,8 +48,15 @@ class MainApplication : Application(), ReactApplication {
     loadReactNative(this)
     ApplicationLifecycleDispatcher.onApplicationCreate(this)
 
-    // decouple daemon lifecycle from the Activity.
-    SyncthingService.start(this)
+    // SyncthingService is intentionally NOT started here. On Android 12+,
+    // startForegroundService throws ForegroundServiceStartNotAllowedException
+    // when the process was woken by a background broadcast (e.g.
+    // BOOT_COMPLETED) because the FGS exemption is granted to the
+    // BroadcastReceiver, not to Application.onCreate. Each entry point that
+    // needs the daemon starts it from a context that does have the exemption:
+    //   MainActivity.onCreate         — user-launched (Activity)
+    //   ShareReceiveActivity.onCreate — share intent (Activity)
+    //   BootReceiver.onReceive        — BOOT_COMPLETED (exempt receiver)
   }
 
   override fun onConfigurationChanged(newConfig: Configuration) {

@@ -172,6 +172,16 @@ bool GoServerBridgeImpl::setExternalControlEnabled(facebook::jsi::Runtime &rt, b
     return false;
 }
 
+bool GoServerBridgeImpl::getStartOnBoot(facebook::jsi::Runtime &rt) {
+    // Android-only: iOS apps cannot launch from cold boot.
+    return false;
+}
+
+bool GoServerBridgeImpl::setStartOnBoot(facebook::jsi::Runtime &rt, bool enabled) {
+    (void)enabled;
+    return false;
+}
+
 facebook::jsi::String GoServerBridgeImpl::pickExternalFolder(facebook::jsi::Runtime &rt) {
     NSString *result = [GoBridgeWrapper pickExternalFolder] ?: @"";
     return facebook::jsi::String::createFromUtf8(rt, [result UTF8String]);

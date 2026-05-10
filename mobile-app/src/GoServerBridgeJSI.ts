@@ -37,6 +37,8 @@ export interface GoServerBridgeInterface {
   setVaultRegistry(json: string): void;
   getExternalControlEnabled(): boolean;
   setExternalControlEnabled(enabled: boolean): boolean;
+  getStartOnBoot(): boolean;
+  setStartOnBoot(enabled: boolean): boolean;
   pickExternalFolder(): string;
   getPersistedExternalFolders(): string;
   revokeExternalFolder(path: string): boolean;
@@ -183,6 +185,14 @@ class GoServerBridgeJSI implements GoServerBridgeInterface {
 
   setExternalControlEnabled(enabled: boolean): boolean {
     return NativeGoServerBridge.setExternalControlEnabled(enabled);
+  }
+
+  getStartOnBoot(): boolean {
+    return NativeGoServerBridge.getStartOnBoot();
+  }
+
+  setStartOnBoot(enabled: boolean): boolean {
+    return NativeGoServerBridge.setStartOnBoot(enabled);
   }
 
   pickExternalFolder(): string {

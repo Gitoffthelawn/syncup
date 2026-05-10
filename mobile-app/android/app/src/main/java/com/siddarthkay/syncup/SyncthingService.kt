@@ -355,10 +355,17 @@ class SyncthingService : Service() {
     private fun promoteToForeground() {
         val notification = buildNotification()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            // dataSync alone is rejected from BOOT_COMPLETED on Android 14+
+            // (per-type allowlist for background broadcast contexts). OR'ing
+            // specialUse satisfies the boot path while preserving dataSync's
+            // semantics for foreground / share / activity launches. Manifest
+            // declares both types and the required PROPERTY_SPECIAL_USE_*
+            // subtype.
             startForeground(
                 NOTIFICATION_ID,
                 notification,
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC or
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE,
             )
         } else {
             startForeground(NOTIFICATION_ID, notification)

@@ -69,6 +69,7 @@ export function SettingsScreen() {
   const [allowMobile, setAllowMobile] = useState<boolean>(false);
   const [batteryExempt, setBatteryExempt] = useState<boolean>(false);
   const [externalControl, setExternalControl] = useState<boolean>(false);
+  const [startOnBoot, setStartOnBoot] = useState<boolean>(false);
   useEffect(() => {
     try {
       setWifiOnly(GoBridge.getWifiOnlySync());
@@ -76,6 +77,7 @@ export function SettingsScreen() {
       setAllowMetered(GoBridge.getAllowMeteredWifi());
       setAllowMobile(GoBridge.getAllowMobileData());
       setExternalControl(GoBridge.getExternalControlEnabled());
+      setStartOnBoot(GoBridge.getStartOnBoot());
     } catch {
       // ignore - stays false
     }
@@ -122,6 +124,15 @@ export function SettingsScreen() {
     try {
       const persisted = GoBridge.setExternalControlEnabled(next);
       setExternalControl(persisted);
+    } catch (e) {
+      Alert.alert('Could not change setting', e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const toggleStartOnBoot = (value: boolean) => {
+    try {
+      const persisted = GoBridge.setStartOnBoot(value);
+      setStartOnBoot(persisted);
     } catch (e) {
       Alert.alert('Could not change setting', e instanceof Error ? e.message : String(e));
     }
@@ -378,6 +389,25 @@ export function SettingsScreen() {
           <TouchableOpacity style={styles.button} onPress={openBatterySettings}>
             <Text style={styles.buttonText}>Battery optimization settings</Text>
           </TouchableOpacity>
+        </Card>
+      )}
+
+      {isAndroid && (
+        <Card>
+          <CardTitle>Background</CardTitle>
+          <View style={styles.switchRow}>
+            <View style={{ flex: 1, paddingRight: 12 }}>
+              <Text style={styles.switchLabel}>Start at boot</Text>
+              <Text style={styles.switchHint}>
+                Off by default. When on, SyncUp launches automatically after the device boots and unlocks. Some OEMs (Xiaomi, Oppo, Vivo, Huawei) require enabling auto-start in their app-info screen for this to work.
+              </Text>
+            </View>
+            <Switch
+              value={startOnBoot}
+              onValueChange={toggleStartOnBoot}
+              trackColor={{ false: colors.border, true: colors.accent }}
+            />
+          </View>
         </Card>
       )}
 
