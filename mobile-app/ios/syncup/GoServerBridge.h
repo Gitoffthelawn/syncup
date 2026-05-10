@@ -55,6 +55,12 @@ public:
     // modal can load it via file:// URI. iOS path is a no-op (file is already
     // a real path once scope is held).
     facebook::jsi::String copySafFileToCache(facebook::jsi::Runtime &rt, facebook::jsi::String treeURI, facebook::jsi::String relativePath);
+    // Android-only: MANAGE_EXTERNAL_STORAGE gate + POSIX dir browser. iOS stubs
+    // these out (hasAllFilesAccess returns true so JS skips the request flow).
+    bool hasAllFilesAccess(facebook::jsi::Runtime &rt);
+    bool requestAllFilesAccess(facebook::jsi::Runtime &rt);
+    facebook::jsi::String listLocalSubdirs(facebook::jsi::Runtime &rt, facebook::jsi::String path);
+    facebook::jsi::String mkdirLocalSubdir(facebook::jsi::Runtime &rt, facebook::jsi::String parent, facebook::jsi::String name);
     // iOS-only: present QLPreviewController on a list of local file paths.
     void previewFileNative(facebook::jsi::Runtime &rt, facebook::jsi::String pathsJson, double startIndex);
 };

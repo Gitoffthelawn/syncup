@@ -69,7 +69,12 @@ export function pickExternalFolderWithICloudWarning(
  */
 export function isExternalFolder(folder: FolderConfig, foldersRoot: string): boolean {
   if (Platform.OS === 'android') {
-    return folder.filesystemType === 'saf';
+    // SAF folders are external by definition; "basic" filesystemType folders
+    // outside the sandbox (added via All Files Access) are also external.
+    if (folder.filesystemType === 'saf') return true;
+    if (!foldersRoot) return false;
+    const normalized = foldersRoot.endsWith('/') ? foldersRoot : `${foldersRoot}/`;
+    return !folder.path.startsWith(normalized) && folder.path !== foldersRoot;
   }
   if (Platform.OS === 'ios') {
     if (!foldersRoot) return false;
@@ -79,7 +84,13 @@ export function isExternalFolder(folder: FolderConfig, foldersRoot: string): boo
   return false;
 }
 
-/** True if the syncthing-config-level filesystemType this folder should use is 'saf'. */
-export function filesystemTypeForExternal(): 'saf' | 'basic' {
-  return Platform.OS === 'android' ? 'saf' : 'basic';
+/**
+ * Pick the syncthing-config filesystemType for a folder path. SAF tree URIs
+ * (content://...) need the custom 'saf' driver; everything else — sandbox
+ * folders, iOS bookmarked paths, and Android POSIX paths reachable via
+ * MANAGE_EXTERNAL_STORAGE — uses the regular 'basic' POSIX driver.
+ */
+export function filesystemTypeForExternal(path: string): 'saf' | 'basic' {
+  if (Platform.OS === 'android' && path.startsWith('content://')) return 'saf';
+  return 'basic';
 }

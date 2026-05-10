@@ -114,7 +114,7 @@ export function AcceptFolderModal({ visible, offer, onClose, onAccepted }: Props
           encryptionPassword: '',
         })),
       ];
-      const fsType = isExternal ? filesystemTypeForExternal() : 'basic';
+      const fsType = isExternal ? filesystemTypeForExternal(path) : 'basic';
       const usesSaf = fsType === 'saf';
       const baseFolder: FolderConfig = {
         id: offer.folderId,

@@ -198,6 +198,29 @@ bool GoServerBridgeImpl::validateExternalFolder(facebook::jsi::Runtime &rt, face
     return [GoBridgeWrapper validateExternalFolder:p];
 }
 
+// Android-specific gate; iOS has no equivalent so the JS side reads `true`
+// to mean "skip the request flow entirely."
+bool GoServerBridgeImpl::hasAllFilesAccess(facebook::jsi::Runtime &rt) {
+    return true;
+}
+
+bool GoServerBridgeImpl::requestAllFilesAccess(facebook::jsi::Runtime &rt) {
+    return false;
+}
+
+// Android-only POSIX dir listing for the All-Files-Access browser. iOS has
+// no equivalent flow; return an error so any accidental call fails loudly.
+facebook::jsi::String GoServerBridgeImpl::listLocalSubdirs(facebook::jsi::Runtime &rt, facebook::jsi::String path) {
+    (void)path;
+    return facebook::jsi::String::createFromUtf8(rt, "{\"error\":\"unsupported on iOS\"}");
+}
+
+facebook::jsi::String GoServerBridgeImpl::mkdirLocalSubdir(facebook::jsi::Runtime &rt, facebook::jsi::String parent, facebook::jsi::String name) {
+    (void)parent;
+    (void)name;
+    return facebook::jsi::String::createFromUtf8(rt, "{\"error\":\"unsupported on iOS\"}");
+}
+
 // SAF-specific cache copy; Android delegates to SAFProvider, iOS no-op
 // (a scoped folder's path is already a real file URI the RN preview can load).
 facebook::jsi::String GoServerBridgeImpl::copySafFileToCache(facebook::jsi::Runtime &rt, facebook::jsi::String treeURI, facebook::jsi::String relativePath) {

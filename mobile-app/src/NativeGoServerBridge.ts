@@ -74,6 +74,32 @@ export interface Spec extends TurboModule {
   /** True if the persisted access is still valid (and on iOS, not stale). */
   readonly validateExternalFolder: (path: string) => boolean;
   /**
+   * Android: true if the user has granted MANAGE_EXTERNAL_STORAGE
+   * (Environment.isExternalStorageManager()). iOS: true unconditionally —
+   * there is no equivalent system gate, and the JS-side flow treats `true`
+   * as "no need to ask the user."
+   */
+  readonly hasAllFilesAccess: () => boolean;
+  /**
+   * Android: launch the system "All files access" settings screen for this
+   * package via ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION. The user is
+   * sent out of the app; permission state must be re-checked on resume.
+   * Returns true if the intent was launched. iOS: no-op, returns false.
+   */
+  readonly requestAllFilesAccess: () => boolean;
+  /**
+   * Android-only: list immediate subdirectories of a POSIX path using
+   * java.io.File. Bypasses the Go sandbox check; used by the All Files Access
+   * folder browser. JSON shape matches listSubdirs(): `{ path, entries }` or
+   * `{ error }`. iOS returns an error.
+   */
+  readonly listLocalSubdirs: (path: string) => string;
+  /**
+   * Android-only: mkdir an immediate child under a POSIX parent. Returns
+   * `{ path }` on success, `{ error }` on failure. iOS returns an error.
+   */
+  readonly mkdirLocalSubdir: (parent: string, name: string) => string;
+  /**
    * Android-only: copy a SAF file into the app cache so RN preview can load
    * it via file:// URI. Returns the cache path or "" on failure. iOS doesn't
    * need this — once scope is held the path is already a real POSIX file.

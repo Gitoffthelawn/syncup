@@ -305,29 +305,73 @@ class GoServerBridgeModule(reactContext: ReactApplicationContext) :
 
     override fun pickExternalFolder(): String {
         // Launch the system SAF folder picker synchronously from the JS thread.
-        // We use SAFPickerHelper which is registered on the Activity and blocks
-        // until the user picks a folder or cancels. Returns JSON describing
-        // the picked folder, matching iOS's UIDocumentPicker shape.
+        // The picker UX is the same regardless of permission state; what changes
+        // is what we store. With MANAGE_EXTERNAL_STORAGE granted we convert the
+        // returned tree URI to a POSIX path so syncthing can use the regular
+        // 'basic' filesystem driver (inotify watcher, no JNI per-file overhead).
+        // Without it, we fall back to taking persistable URI permission and
+        // storing the SAF tree URI for the 'saf' filesystem driver.
         val activity = ctx.currentActivity as? MainActivity
             ?: return ""
         val uri = activity.pickSafFolderBlocking() ?: return ""
-        // Take persistable read+write permission so the URI survives app restarts.
-        val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or
-            Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-        ctx.contentResolver.takePersistableUriPermission(uri, flags)
         val uriString = uri.toString()
         val displayName = try {
             safProvider.getDisplayName(uriString)
         } catch (e: Exception) {
             uriString
         }
-        return org.json.JSONObject().apply {
-            put("ok", true)
-            put("id", uriString)
-            put("path", uriString)
-            put("displayName", displayName)
-            put("isUbiquitous", false)
-        }.toString()
+        val posixPath = if (hasAllFilesAccess()) tryConvertTreeUriToPosix(uri) else null
+        return if (posixPath != null) {
+            // POSIX-backed: skip SAF persistence; the path is reachable via
+            // direct filesystem APIs as long as the permission is held.
+            org.json.JSONObject().apply {
+                put("ok", true)
+                put("id", posixPath)
+                put("path", posixPath)
+                put("displayName", displayName)
+                put("isUbiquitous", false)
+            }.toString()
+        } else {
+            val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            ctx.contentResolver.takePersistableUriPermission(uri, flags)
+            org.json.JSONObject().apply {
+                put("ok", true)
+                put("id", uriString)
+                put("path", uriString)
+                put("displayName", displayName)
+                put("isUbiquitous", false)
+            }.toString()
+        }
+    }
+
+    /**
+     * Resolve a SAF tree URI under primary external storage (or a known SD-card
+     * volume) to its POSIX path. Returns null for cloud DocumentsProviders or
+     * any URI we can't safely map. Caller must hold MANAGE_EXTERNAL_STORAGE for
+     * the returned path to actually be readable.
+     */
+    private fun tryConvertTreeUriToPosix(uri: android.net.Uri): String? {
+        return try {
+            // External Storage Documents authority is the only one that maps to
+            // /storage/* mount points. Drive/Dropbox/etc. live behind their own
+            // authorities and have no POSIX equivalent.
+            if (uri.authority != "com.android.externalstorage.documents") return null
+            val docId = android.provider.DocumentsContract.getTreeDocumentId(uri) ?: return null
+            val parts = docId.split(":", limit = 2)
+            if (parts.isEmpty()) return null
+            val volume = parts[0]
+            val relPath = if (parts.size > 1) parts[1] else ""
+            val mountPoint = when (volume) {
+                "primary" -> android.os.Environment.getExternalStorageDirectory().absolutePath
+                else -> "/storage/$volume"
+            }
+            val full = if (relPath.isEmpty()) mountPoint else "$mountPoint/$relPath"
+            if (java.io.File(full).exists()) full else null
+        } catch (e: Exception) {
+            android.util.Log.w(NAME, "tryConvertTreeUriToPosix failed", e)
+            null
+        }
     }
 
     override fun getPersistedExternalFolders(): String {
@@ -411,6 +455,132 @@ class GoServerBridgeModule(reactContext: ReactApplicationContext) :
             mobileAPI.validateSAFPermission(path)
         } catch (e: Exception) {
             android.util.Log.e(NAME, "validateExternalFolder failed", e)
+            false
+        }
+    }
+
+    override fun listLocalSubdirs(path: String): String {
+        return try {
+            val dir = java.io.File(path)
+            if (!dir.exists()) {
+                return org.json.JSONObject().apply {
+                    put("error", "no such directory: $path")
+                }.toString()
+            }
+            if (!dir.isDirectory) {
+                return org.json.JSONObject().apply {
+                    put("error", "not a directory: $path")
+                }.toString()
+            }
+            val children = dir.listFiles() ?: emptyArray()
+            val arr = org.json.JSONArray()
+            for (child in children) {
+                if (child.isHidden) continue
+                arr.put(
+                    org.json.JSONObject().apply {
+                        put("name", child.name)
+                        put("isDir", child.isDirectory)
+                        put("size", if (child.isDirectory) 0 else child.length())
+                        // RFC3339 to match the Go-side listSubdirs shape so JS
+                        // consumers don't have to branch on source.
+                        put(
+                            "modTime",
+                            try {
+                                java.text.SimpleDateFormat(
+                                    "yyyy-MM-dd'T'HH:mm:ssXXX",
+                                    java.util.Locale.US,
+                                ).format(java.util.Date(child.lastModified()))
+                            } catch (e: Exception) {
+                                ""
+                            },
+                        )
+                    },
+                )
+            }
+            org.json.JSONObject().apply {
+                put("path", dir.absolutePath)
+                put("entries", arr)
+            }.toString()
+        } catch (e: SecurityException) {
+            org.json.JSONObject().apply {
+                put("error", "permission denied: ${e.message}")
+            }.toString()
+        } catch (e: Exception) {
+            android.util.Log.e(NAME, "listLocalSubdirs failed", e)
+            org.json.JSONObject().apply {
+                put("error", e.message ?: "unknown error")
+            }.toString()
+        }
+    }
+
+    override fun mkdirLocalSubdir(parent: String, name: String): String {
+        return try {
+            val parentDir = java.io.File(parent)
+            if (!parentDir.exists() || !parentDir.isDirectory) {
+                return org.json.JSONObject().apply {
+                    put("error", "parent is not a directory: $parent")
+                }.toString()
+            }
+            // Block path-traversal: name must be a single component.
+            if (name.contains('/') || name == "." || name == "..") {
+                return org.json.JSONObject().apply {
+                    put("error", "invalid folder name: $name")
+                }.toString()
+            }
+            val target = java.io.File(parentDir, name)
+            if (target.exists()) {
+                if (!target.isDirectory) {
+                    return org.json.JSONObject().apply {
+                        put("error", "a file with that name already exists")
+                    }.toString()
+                }
+            } else if (!target.mkdir()) {
+                return org.json.JSONObject().apply {
+                    put("error", "could not create folder")
+                }.toString()
+            }
+            org.json.JSONObject().apply {
+                put("path", target.absolutePath)
+            }.toString()
+        } catch (e: SecurityException) {
+            org.json.JSONObject().apply {
+                put("error", "permission denied: ${e.message}")
+            }.toString()
+        } catch (e: Exception) {
+            android.util.Log.e(NAME, "mkdirLocalSubdir failed", e)
+            org.json.JSONObject().apply {
+                put("error", e.message ?: "unknown error")
+            }.toString()
+        }
+    }
+
+    override fun hasAllFilesAccess(): Boolean {
+        // Pre-API-30 devices have always-broad external storage; treat as "granted".
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.R) return true
+        return android.os.Environment.isExternalStorageManager()
+    }
+
+    override fun requestAllFilesAccess(): Boolean {
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.R) return false
+        // Per-app screen first; some OEMs only ship the global one, so fall back.
+        return try {
+            val pkgUri = android.net.Uri.parse("package:" + ctx.packageName)
+            val direct = android.content.Intent(
+                android.provider.Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+                pkgUri,
+            ).apply { flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK }
+            try {
+                ctx.startActivity(direct)
+                true
+            } catch (e: android.content.ActivityNotFoundException) {
+                val fallback = android.content.Intent(
+                    android.provider.Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION,
+                ).apply { flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK }
+                ctx.startActivity(fallback)
+                true
+            }
+        } catch (e: Exception) {
+            android.util.Log.e(NAME, "requestAllFilesAccess failed", e)
             false
         }
     }

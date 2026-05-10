@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { AppState, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import GoBridge from '../GoServerBridgeJSI';
 import { FormModal } from '../components/FormModal';
 import { Field } from '../components/Field';
 import { colors } from '../components/ui';
@@ -7,6 +8,7 @@ import { useSyncthing, useSyncthingClient } from '../daemon/SyncthingContext';
 import type { DeviceConfig, FolderConfig } from '../api/types';
 import { isAbortError } from '../api/syncthing';
 import { FolderPicker } from './FolderPicker';
+import { AndroidLocalBrowser } from './AndroidLocalBrowser';
 import { FolderTypePicker } from '../components/FolderTypePicker';
 import {
   filesystemTypeForExternal,
@@ -49,6 +51,19 @@ export function AddFolderModal({ visible, onClose, onAdded }: Props) {
   const [isExternal, setIsExternal] = useState(false);
   const [externalDisplayName, setExternalDisplayName] = useState('');
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [localBrowserOpen, setLocalBrowserOpen] = useState(false);
+  // Re-evaluated on mount and on AppState 'active' since the user grants
+  // MANAGE_EXTERNAL_STORAGE outside the app and returns via resume. When
+  // granted, the primary picker is the full-screen native browser (POSIX);
+  // the SAF picker stays available as the alternate route for cloud / SD-card.
+  const [hasAllFilesAccess, setHasAllFilesAccess] = useState(() => {
+    if (Platform.OS !== 'android') return true;
+    try {
+      return GoBridge.hasAllFilesAccess();
+    } catch {
+      return false;
+    }
+  });
 
   const [label, setLabel] = useState('');
   const [labelDirty, setLabelDirty] = useState(false);
@@ -68,6 +83,24 @@ export function AddFolderModal({ visible, onClose, onAdded }: Props) {
     if (!visible) return;
     client.devices().then(setDevices).catch(e => setError(String(e)));
   }, [visible, client]);
+
+  // Re-check All Files Access whenever the app comes back to the foreground —
+  // that's the moment the user has just toggled the system setting.
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    const refresh = () => {
+      try {
+        setHasAllFilesAccess(GoBridge.hasAllFilesAccess());
+      } catch {
+        // leave previous value
+      }
+    };
+    if (visible) refresh();
+    const sub = AppState.addEventListener('change', state => {
+      if (state === 'active') refresh();
+    });
+    return () => sub.remove();
+  }, [visible]);
 
   // auto-fill label/id from path unless the user's already typed in them
   useEffect(() => {
@@ -107,6 +140,34 @@ export function AddFolderModal({ visible, onClose, onAdded }: Props) {
         setIsExternal(true);
         setExternalDisplayName(folder.displayName || 'Device folder');
       });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  // Primary picker: full-screen native browser when MANAGE granted (covers
+  // Download root and any other path Android's SAF picker refuses), SAF
+  // otherwise. The SAF route is still exposed below as an alternate so cloud
+  // and SD-card folders remain reachable.
+  const pickPrimary = () => {
+    if (Platform.OS === 'android' && hasAllFilesAccess) {
+      setLocalBrowserOpen(true);
+      return;
+    }
+    pickExternal();
+  };
+
+  const onLocalBrowserPick = (chosen: string) => {
+    setLocalBrowserOpen(false);
+    setPath(chosen);
+    setIsExternal(true);
+    const name = chosen.split('/').filter(Boolean).pop() || 'Device folder';
+    setExternalDisplayName(name);
+  };
+
+  const requestAllFilesAccess = () => {
+    try {
+      GoBridge.requestAllFilesAccess();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
@@ -159,7 +220,7 @@ export function AddFolderModal({ visible, onClose, onAdded }: Props) {
       // can't be watched via inotify — rely on 60s rescans. On iOS, external
       // folders are plain POSIX once scope is held, so the regular watcher
       // works and we can stay on the slower default rescan cadence.
-      const fsType = isExternal ? filesystemTypeForExternal() : 'basic';
+      const fsType = isExternal ? filesystemTypeForExternal(path) : 'basic';
       const usesSaf = fsType === 'saf';
       const baseFolder: FolderConfig = {
         id: effectiveId,
@@ -232,7 +293,7 @@ export function AddFolderModal({ visible, onClose, onAdded }: Props) {
   return (
     <>
       <FormModal
-        visible={visible && !pickerOpen}
+        visible={visible && !pickerOpen && !localBrowserOpen}
         title="Add folder"
         onCancel={cancel}
         onSubmit={submit}
@@ -243,7 +304,7 @@ export function AddFolderModal({ visible, onClose, onAdded }: Props) {
         <Text style={styles.sectionLabel}>Location</Text>
         <TouchableOpacity
           style={[styles.pickerBtn, !path && styles.pickerBtnEmpty]}
-          onPress={isExternal ? pickExternal : pickExternal}
+          onPress={pickPrimary}
         >
           <Text style={[styles.pickerBtnText, !path && styles.pickerBtnTextEmpty]} numberOfLines={2}>
             {displayPath || 'Pick a folder on this device…'}
@@ -257,6 +318,23 @@ export function AddFolderModal({ visible, onClose, onAdded }: Props) {
               ? 'This folder lives inside the app sandbox and appears in the Files app.'
               : 'Pick any folder on your device, or tap below to use app storage.'}
         </Text>
+        {Platform.OS === 'android' && !hasAllFilesAccess && !path && (
+          <View style={styles.permBanner}>
+            <Text style={styles.permBannerTitle}>Unlock Downloads, Pictures, and more</Text>
+            <Text style={styles.permBannerText}>
+              Android's system folder picker hides Downloads and other shared folders. Grant All
+              Files Access to browse them directly.
+            </Text>
+            <TouchableOpacity style={styles.permBannerBtn} onPress={requestAllFilesAccess}>
+              <Text style={styles.permBannerBtnText}>Grant All Files Access</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        {Platform.OS === 'android' && hasAllFilesAccess && !isExternal && (
+          <TouchableOpacity style={styles.safBtn} onPress={pickExternal}>
+            <Text style={styles.safBtnText}>Pick a cloud or SD-card folder (SAF)</Text>
+          </TouchableOpacity>
+        )}
         {isExternal ? (
           <TouchableOpacity
             style={styles.safBtn}
@@ -407,6 +485,14 @@ export function AddFolderModal({ visible, onClose, onAdded }: Props) {
           setPickerOpen(false);
         }}
       />
+
+      {Platform.OS === 'android' && (
+        <AndroidLocalBrowser
+          visible={localBrowserOpen}
+          onCancel={() => setLocalBrowserOpen(false)}
+          onPick={onLocalBrowserPick}
+        />
+      )}
     </>
   );
 }
@@ -525,6 +611,39 @@ const styles = StyleSheet.create({
     color: colors.accent,
     fontSize: 13,
     fontWeight: '500',
+  },
+  permBanner: {
+    backgroundColor: colors.card,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 12,
+    marginTop: 4,
+    marginBottom: 12,
+    gap: 8,
+  },
+  permBannerTitle: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  permBannerText: {
+    color: colors.textDim,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  permBannerBtn: {
+    alignSelf: 'flex-start',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.accent,
+  },
+  permBannerBtnText: {
+    color: colors.accent,
+    fontSize: 12,
+    fontWeight: '600',
   },
   error: { color: colors.error, fontSize: 13, marginTop: 8 },
   presetRow: { flexDirection: 'row', gap: 10 },

@@ -44,6 +44,10 @@ export interface GoServerBridgeInterface {
   validateExternalFolder(path: string): boolean;
   copySafFileToCache(treeURI: string, relativePath: string): string;
   previewFileNative(pathsJson: string, startIndex: number): void;
+  hasAllFilesAccess(): boolean;
+  requestAllFilesAccess(): boolean;
+  listLocalSubdirs(path: string): string;
+  mkdirLocalSubdir(parent: string, name: string): string;
 }
 
 class GoServerBridgeJSI implements GoServerBridgeInterface {
@@ -207,6 +211,22 @@ class GoServerBridgeJSI implements GoServerBridgeInterface {
 
   previewFileNative(pathsJson: string, startIndex: number): void {
     NativeGoServerBridge.previewFileNative(pathsJson, startIndex);
+  }
+
+  hasAllFilesAccess(): boolean {
+    return NativeGoServerBridge.hasAllFilesAccess();
+  }
+
+  requestAllFilesAccess(): boolean {
+    return NativeGoServerBridge.requestAllFilesAccess();
+  }
+
+  listLocalSubdirs(path: string): string {
+    return NativeGoServerBridge.listLocalSubdirs(path);
+  }
+
+  mkdirLocalSubdir(parent: string, name: string): string {
+    return NativeGoServerBridge.mkdirLocalSubdir(parent, name);
   }
 }
 
