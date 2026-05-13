@@ -106,7 +106,7 @@
             ''}
 
             # Expose Xcode toolchain so gomobile / xcodebuild can find SDKs.
-            if [ -d /Applications/Xcode.app ]; then
+            if [ -z "$DEVELOPER_DIR" ] && [ -d /Applications/Xcode.app ]; then
               export DEVELOPER_DIR="/Applications/Xcode.app/Contents/Developer"
             fi
 

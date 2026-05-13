@@ -5,6 +5,8 @@ ANDROID_APK = android/app/build/outputs/apk/release/app-release.apk
 XCODE_WORKSPACE = ios/syncup.xcworkspace
 XCODE_SCHEME = syncup
 XCODE_DERIVEDDATA = ios/build
+IOS_SDK ?= iphoneos
+IOS_SIMULATOR_SDK ?= iphonesimulator
 
 .PHONY: install pod-install build-ios archive-ios build-android pr-android release-android run-ios run-android clean-ios clean-android clean help
 
@@ -27,7 +29,7 @@ build-ios: install pod-install
 	@echo "Building iOS Simulator app (v$(MARKETING_VERSION))..."
 	@set -o pipefail && xcodebuild -workspace $(XCODE_WORKSPACE) \
 		-scheme $(XCODE_SCHEME) \
-		-sdk iphonesimulator \
+		-sdk $(IOS_SIMULATOR_SDK) \
 		-configuration Release \
 		-destination 'generic/platform=iOS Simulator' \
 		-derivedDataPath $(XCODE_DERIVEDDATA) \
@@ -67,10 +69,12 @@ archive-ios:
 	@# `make ios` succeeds on the same runner where `make ios-pr` fails.
 	@# Trade-off: bridging header is reparsed per Swift file. On a full
 	@# archive (no incrementality) the cost is negligible.
+	@mkdir -p $(XCODE_DERIVEDDATA)
 	@set -o pipefail && xcodebuild \
 		-workspace $(XCODE_WORKSPACE) \
 		-scheme $(XCODE_SCHEME) \
 		-configuration Release \
+		-sdk $(IOS_SDK) \
 		-destination 'generic/platform=iOS' \
 		-derivedDataPath $(XCODE_DERIVEDDATA) \
 		-archivePath $(ARCHIVE_PATH) \
@@ -83,7 +87,10 @@ archive-ios:
 		CODE_SIGN_IDENTITY="Apple Distribution" \
 		SWIFT_PRECOMPILE_BRIDGING_HEADER=NO \
 		clean archive \
-		2>&1 | if command -v xcbeautify >/dev/null 2>&1; then xcbeautify; else cat; fi
+		2>&1 | tee $(XCODE_DERIVEDDATA)/xcodebuild-archive.log \
+		| if command -v xcbeautify >/dev/null 2>&1; then xcbeautify; else cat; fi || \
+		(echo "=== raw xcodebuild output (xcbeautify swallows destination spec details) ==="; \
+		 tail -n 80 $(XCODE_DERIVEDDATA)/xcodebuild-archive.log; exit 1)
 	@echo "Exporting IPA via $(EXPORT_OPTIONS)..."
 	@mkdir -p $(IPA_DIR)
 	@set -o pipefail && xcodebuild \
