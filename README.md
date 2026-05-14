@@ -13,6 +13,11 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MPL--2.0-blue.svg" alt="License: MPL-2.0"></a>
 </p>
 
+<p align="center">
+  <a href="https://f-droid.org/en/packages/com.siddarthkay.syncup/"><img src="https://img.shields.io/badge/F--Droid-Get%20it%20on-1976D2?logo=f-droid&logoColor=white" alt="Get it on F-Droid"></a>
+  <a href="https://apps.apple.com/us/app/syncup-client/id6762605078"><img src="https://img.shields.io/badge/App%20Store-Download-000?logo=apple&logoColor=white" alt="Download on the App Store"></a>
+</p>
+
 ---
 
 Syncthing's official Android client was archived in December 2024.
@@ -23,8 +28,6 @@ Native UI scaffolded from
 [react-native-go](https://github.com/siddarthkay/react-native-go).
 
 ## Screenshots
-
-<!-- TODO: add screenshots -->
 
 | Status | Folders | Devices | Settings |
 |--------|---------|---------|----------|
@@ -39,48 +42,49 @@ Native UI scaffolded from
 
 </details>
 
-## Differences from other clients
+## Features
 
-- **Daemon runs in-process on Android.** The `Go` daemon lives inside
-  the app via `gomobile`. There is no subprocess to manage, no IPC
-  between a background service and the UI, and no service-restart
-  handling.
-- **Auto-accept folders from trusted peers.** When you add a peer, you
-  can toggle auto-accept so any folder they share is added to your
-  device automatically without a prompt. Other pending offers show up
-  as accept/ignore cards in the Folders tab.
-- **QR pairing works both ways.** Display your device's QR for a peer
-  to scan, or scan theirs. The 56-character device ID never needs to
-  be typed by hand.
-- **UI updates in near real time.** Long-polling `/rest/events` means
-  config changes, folder state, and incoming offers reach the UI in
-  about a second, instead of on a polling interval.
+### Sync core
+- **In-process daemon.** The Go daemon lives inside the app via `gomobile`. No subprocess, no IPC, no service-restart juggling.
+- **Real-time UI.** Long-polling on `/rest/events` keeps folder state, config, and incoming offers fresh in about a second.
+- **QR pairing, both ways.** Show your device QR or scan a peer's. The 56-character device ID never has to be typed.
+- **Auto-accept folders.** Trust a peer and any folder they share gets added automatically. Untrusted offers show up as accept or ignore cards.
+- **Onboarding tour.** First-launch coach marks walk new users through adding a device, a folder, and reading sync state.
+- **Search.** Find any file across folders, preview it inline (images, text, markdown, PDF).
 
-## Obsidian users
+### Storage and platform
+- **SAF on Android.** Sync into folders outside the app sandbox (Documents, SD card, USB drive).
+- **Auto-start on boot.** Android picks up where it left off after a reboot.
+- **External automation.** Start, stop, or rescan from Tasker, MacroDroid, or any `am broadcast` caller. Off by default, see [docs/AUTOMATION.md](docs/AUTOMATION.md).
+- **Port fallback.** If `8384` is taken, SyncUp picks the next free port.
+- **Reproducible Android builds.** F-Droid metadata in `fastlane/`, armv7a + arm64 APKs.
 
-If you use Obsidian and were considering Sync ($96/yr) just for
-cross-device note syncing, SyncUp covers that case. Pick "Obsidian
-vault" when adding the folder and SyncUp configures the rescan interval,
-ignore patterns, and watcher to match how Obsidian writes files. Apply
-the preset retroactively from the folder detail screen if `.obsidian/`
-is detected. Conflicts on `.md` files get a 3-way merge view.
+### File management
+- **Folder browser** with thumbnails, file preview, and per-folder statistics.
+- **Versioning and ignore editors.** Edit `.stignore` and versioning policy from the folder detail screen.
+- **Conflict resolver.** Pick a version, or use the markdown-aware 3-way merge for `.md` conflicts.
+- **Transfers view** and **recent changes** for what just moved.
 
-Setup guide: [docs/OBSIDIAN.md](docs/OBSIDIAN.md).
+### Capture and backup
+- **Quick capture.** Open the camera, snap, and drop the photo straight into a synced folder.
+- **Photo backup.** Background upload of new photos and videos into a chosen folder, with flat, by-date, or by-year/month layouts.
 
-## Status
+### Obsidian
+- **Obsidian vault preset.** Picks the right rescan interval, watcher setting, and ignore patterns so `workspace.json` stops causing conflicts. Apply retroactively when `.obsidian/` is detected. Setup guide: [docs/OBSIDIAN.md](docs/OBSIDIAN.md).
 
-The first real milestone was an iOS simulator, an Android emulator, and
-a desktop Syncthing node all sharing the same folder and moving files
-between them. The codebase is at v0. Nothing is on an app store yet;
-the release process is documented in
-[docs/RELEASE.md](docs/RELEASE.md).
+## Install
+
+- **Android:** [F-Droid](https://f-droid.org/en/packages/com.siddarthkay.syncup/)
+- **iOS:** [App Store](https://apps.apple.com/us/app/syncup-client/id6762605078)
+
+Release process lives in [docs/RELEASE.md](docs/RELEASE.md). Currently at v1.1.13.
 
 ## Architecture
 
 The React Native UI talks to the embedded daemon over its REST API at
-`127.0.0.1:8384`. A `TurboModule` implemented in `Swift` and `Kotlin`
+`127.0.0.1:8384`. A `TurboModule` implemented in Swift and Kotlin
 handles daemon lifecycle, preferences, and sandbox filesystem helpers.
-The `Go` side (`backend/wrapper.go`) wraps
+The Go side (`backend/wrapper.go`) wraps
 `github.com/syncthing/syncthing/lib/syncthing` and is bound through
 `gomobile`.
 
@@ -91,22 +95,12 @@ which has been simpler to work with.
 
 ## Build
 
-Every `make` target runs inside a Nix shell automatically — you don't
-need to install Go, Node, or JDK yourself. The only prerequisites are:
+Every `make` target runs inside a Nix shell automatically, so you don't
+need to install Go, Node, or JDK yourself. Prerequisites:
 
 - **[Nix](https://nixos.org/download/)** (with flakes enabled)
-- **Xcode 16+** (iOS, macOS only — not available through Nix)
-- **Android SDK** with **NDK r26** (Android — install via Android Studio)
-
-If you prefer managing all tools yourself, pass `SYSTEM=1` to bypass
-Nix:
-
-```bash
-make sim-ios SYSTEM=1
-```
-
-In that case you need: Go 1.25+, Node 20+ with Corepack enabled for
-Yarn 4, JDK 17, CocoaPods, and the Android SDK/NDK listed above.
+- **Xcode 16+** (iOS, macOS only)
+- **Android SDK** with **NDK r27** (install via Android Studio)
 
 ### Release builds
 
@@ -135,7 +129,7 @@ make dev-android   # build Go backend + start Expo dev client (Android)
 JS/TS changes reload instantly. Go changes require restarting the
 dev target.
 
-### Lint & typecheck
+### Lint and typecheck
 
 ```
 cd mobile-app
@@ -149,7 +143,7 @@ CI runs lint, typecheck, and `go vet -tags noassets ./...`.
 
 Android keeps the daemon running in the background while the system
 allows it. Settings exposes wifi-only and charging-only toggles that
-drive the run-condition monitor.
+drive the run-condition monitor. The app also restarts on boot.
 
 iOS is more constrained. Apple does not permit continuous background
 execution for apps outside the VoIP and audio categories, and this
@@ -164,8 +158,9 @@ wakes up, instead of depending on other peers being online at the same
 time.
 
 Android folders live under app-scoped external storage at
-`/storage/emulated/0/Android/data/com.siddarthkay.syncup/...` and
-are deleted when the app is uninstalled.
+`/storage/emulated/0/Android/data/com.siddarthkay.syncup/...` by
+default, or anywhere SAF can reach. App-scoped folders are deleted
+when the app is uninstalled; SAF folders are not.
 
 ## Contributing
 
@@ -183,7 +178,6 @@ If this is useful to you, a GitHub star is the signal I watch to
 decide what's worth continuing. Sponsorships cover the Apple developer
 account and testing devices, and they let me spend time on the harder
 iOS background work instead of billable client work.
-
 - [Star on GitHub](https://github.com/siddarthkay/syncthing-app)
 - [Sponsor on GitHub](https://github.com/sponsors/siddarthkay)
 
