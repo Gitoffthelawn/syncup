@@ -32,6 +32,14 @@ class MainActivity : ReactActivity() {
 
   private lateinit var safPickerLauncher: ActivityResultLauncher<Uri?>
 
+  private var backupSavePickerResult = AtomicReference<Uri?>(null)
+  private var backupSavePickerLatch = CountDownLatch(1)
+  private lateinit var backupSavePickerLauncher: ActivityResultLauncher<String>
+
+  private var backupOpenPickerResult = AtomicReference<Uri?>(null)
+  private var backupOpenPickerLatch = CountDownLatch(1)
+  private lateinit var backupOpenPickerLauncher: ActivityResultLauncher<Array<String>>
+
   /**
    * Called from GoServerBridgeModule.pickSafFolder() on the JS thread.
    * Blocks until the user picks a folder or cancels, then returns the URI.
@@ -44,6 +52,22 @@ class MainActivity : ReactActivity() {
     return safPickerResult.get()
   }
 
+  fun pickBackupSaveBlocking(suggestedName: String): Uri? {
+    backupSavePickerResult.set(null)
+    backupSavePickerLatch = CountDownLatch(1)
+    runOnUiThread { backupSavePickerLauncher.launch(suggestedName) }
+    backupSavePickerLatch.await()
+    return backupSavePickerResult.get()
+  }
+
+  fun pickBackupOpenBlocking(): Uri? {
+    backupOpenPickerResult.set(null)
+    backupOpenPickerLatch = CountDownLatch(1)
+    runOnUiThread { backupOpenPickerLauncher.launch(arrayOf("application/zip", "application/octet-stream")) }
+    backupOpenPickerLatch.await()
+    return backupOpenPickerResult.get()
+  }
+
   override fun onCreate(savedInstanceState: Bundle?) {
     setTheme(R.style.AppTheme);
 
@@ -53,6 +77,20 @@ class MainActivity : ReactActivity() {
     ) { uri: Uri? ->
       safPickerResult.set(uri)
       safPickerLatch.countDown()
+    }
+
+    backupSavePickerLauncher = registerForActivityResult(
+      ActivityResultContracts.CreateDocument("application/zip")
+    ) { uri: Uri? ->
+      backupSavePickerResult.set(uri)
+      backupSavePickerLatch.countDown()
+    }
+
+    backupOpenPickerLauncher = registerForActivityResult(
+      ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+      backupOpenPickerResult.set(uri)
+      backupOpenPickerLatch.countDown()
     }
 
     super.onCreate(null)

@@ -25,6 +25,12 @@
 - (void)presentWithPaths:(NSArray<NSString *> * _Nonnull)paths startIndex:(NSInteger)startIndex;
 @end
 
+@interface BackupPicker : NSObject
++ (instancetype _Nonnull)shared;
+- (NSString * _Nonnull)exportFileBlockingWithSourcePath:(NSString * _Nonnull)sourcePath;
+- (NSString * _Nonnull)importFileBlockingWithDestinationPath:(NSString * _Nonnull)destinationPath;
+@end
+
 static NSString * const kNotifiedErrorCountsKey = @"com.siddarthkay.syncup.notifiedErrorCounts";
 static NSString * const kVaultRegistryKey = @"com.siddarthkay.syncup.vaultRegistry";
 static NSString * const kNotifiedVaultStaleKey = @"com.siddarthkay.syncup.notifiedVaultStale";
@@ -53,6 +59,8 @@ static NSString * const kNotifiedVaultStaleKey = @"com.siddarthkay.syncup.notifi
 - (void)setSuspended:(BOOL)suspended;
 - (void)registerExternalRoot:(NSString *)path;
 - (void)unregisterExternalRoot:(NSString *)path;
+- (NSString *)exportConfig:(NSString *)srcDataDir dstZipPath:(NSString *)dstZipPath extrasJSON:(NSString *)extrasJSON;
+- (NSString *)importConfig:(NSString *)srcZipPath dstDataDir:(NSString *)dstDataDir password:(NSString *)password;
 @end
 
 static Class GobridgeMobileAPIClass;
@@ -516,6 +524,130 @@ static Class GobridgeMobileAPIClass;
   } @catch (NSException *exception) {
     NSLog(@"GoBridgeWrapper: previewFile exception: %@", exception);
   }
+}
+
++ (NSString *)errorJSON:(NSString *)message {
+  NSDictionary *obj = @{ @"ok": @NO, @"error": message ?: @"unknown error" };
+  NSError *err = nil;
+  NSData *data = [NSJSONSerialization dataWithJSONObject:obj options:0 error:&err];
+  if (!data) return @"{\"ok\":false,\"error\":\"json error\"}";
+  return [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] ?: @"";
+}
+
++ (NSString *)exportConfig:(NSString *)asyncStorageJson {
+  @try {
+    id api = [self api];
+    if (!api) return [self errorJSON:@"bridge not initialized"];
+
+    NSString *cacheDir = NSTemporaryDirectory();
+    NSString *stem = [NSString stringWithFormat:@"syncup-backup-%@.zip",
+                      [self timestampString]];
+    NSString *stagedPath = [cacheDir stringByAppendingPathComponent:stem];
+    NSString *asyncPath = [cacheDir stringByAppendingPathComponent:@"syncup-async.json"];
+    [[NSFileManager defaultManager] removeItemAtPath:stagedPath error:nil];
+    [[NSFileManager defaultManager] removeItemAtPath:asyncPath error:nil];
+
+    NSMutableArray *extras = [NSMutableArray array];
+    if (asyncStorageJson.length > 0 && ![asyncStorageJson isEqualToString:@"{}"]) {
+      NSError *writeErr = nil;
+      [asyncStorageJson writeToFile:asyncPath
+                         atomically:YES
+                           encoding:NSUTF8StringEncoding
+                              error:&writeErr];
+      if (writeErr) {
+        return [self errorJSON:[NSString stringWithFormat:@"async write failed: %@", writeErr.localizedDescription]];
+      }
+      [extras addObject:@{ @"name": @"syncup-async.json", @"path": asyncPath }];
+    }
+    NSData *extrasData = [NSJSONSerialization dataWithJSONObject:extras options:0 error:nil];
+    NSString *extrasJSON = [[NSString alloc] initWithData:extrasData encoding:NSUTF8StringEncoding] ?: @"[]";
+
+    NSString *result = [api exportConfig:@"" dstZipPath:stagedPath extrasJSON:extrasJSON];
+    [[NSFileManager defaultManager] removeItemAtPath:asyncPath error:nil];
+    if (result.length == 0) return [self errorJSON:@"nil result"];
+    NSData *data = [result dataUsingEncoding:NSUTF8StringEncoding];
+    id parsed = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+    if ([parsed isKindOfClass:[NSDictionary class]]) {
+      NSString *errStr = ((NSDictionary *)parsed)[@"error"];
+      if (errStr.length > 0) {
+        [[NSFileManager defaultManager] removeItemAtPath:stagedPath error:nil];
+        return [self errorJSON:errStr];
+      }
+    }
+
+    NSString *destPath = [BackupPicker.shared exportFileBlockingWithSourcePath:stagedPath];
+    [[NSFileManager defaultManager] removeItemAtPath:stagedPath error:nil];
+    if (destPath.length == 0) return @"";
+
+    NSDictionary *ok = @{
+      @"ok": @YES,
+      @"path": destPath,
+      @"displayName": [destPath lastPathComponent] ?: stem,
+    };
+    NSData *okData = [NSJSONSerialization dataWithJSONObject:ok options:0 error:nil];
+    return [[NSString alloc] initWithData:okData encoding:NSUTF8StringEncoding] ?: @"";
+  } @catch (NSException *exception) {
+    NSLog(@"GoBridgeWrapper: exportConfig exception: %@", exception);
+    return [self errorJSON:exception.reason ?: @"exception"];
+  }
+}
+
++ (NSString *)importConfig:(NSString *)password {
+  @try {
+    id api = [self api];
+    if (!api) return [self errorJSON:@"bridge not initialized"];
+
+    NSString *cacheDir = NSTemporaryDirectory();
+    NSString *stagedPath = [cacheDir stringByAppendingPathComponent:@"syncup-restore.zip"];
+    NSString *picked = [BackupPicker.shared importFileBlockingWithDestinationPath:stagedPath];
+    if (picked.length == 0) return @"";
+
+    NSString *dataDir = [self dataDir] ?: @"";
+    NSString *result = [api importConfig:stagedPath dstDataDir:dataDir password:(password ?: @"")];
+    [[NSFileManager defaultManager] removeItemAtPath:stagedPath error:nil];
+    if (result.length == 0) return [self errorJSON:@"nil result"];
+
+    NSData *data = [result dataUsingEncoding:NSUTF8StringEncoding];
+    id parsed = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+    NSString *errStr = nil;
+    BOOL importedAsync = NO;
+    if ([parsed isKindOfClass:[NSDictionary class]]) {
+      errStr = ((NSDictionary *)parsed)[@"error"];
+      importedAsync = [((NSDictionary *)parsed)[@"importedAsync"] boolValue];
+    }
+    if (errStr.length > 0) return [self errorJSON:errStr];
+
+    NSString *asyncJson = @"";
+    if (importedAsync) {
+      NSString *asyncFile = [dataDir stringByAppendingPathComponent:@"syncup-async.json"];
+      NSError *readErr = nil;
+      NSString *contents = [NSString stringWithContentsOfFile:asyncFile
+                                                     encoding:NSUTF8StringEncoding
+                                                        error:&readErr];
+      if (contents) asyncJson = contents;
+      [[NSFileManager defaultManager] removeItemAtPath:asyncFile error:nil];
+    }
+
+    NSDictionary *ok = @{
+      @"ok": @YES,
+      @"path": dataDir,
+      @"displayName": [picked lastPathComponent] ?: @"",
+      @"importedPrefs": @NO,
+      @"asyncStorageJson": asyncJson,
+    };
+    NSData *okData = [NSJSONSerialization dataWithJSONObject:ok options:0 error:nil];
+    return [[NSString alloc] initWithData:okData encoding:NSUTF8StringEncoding] ?: @"";
+  } @catch (NSException *exception) {
+    NSLog(@"GoBridgeWrapper: importConfig exception: %@", exception);
+    return [self errorJSON:exception.reason ?: @"exception"];
+  }
+}
+
++ (NSString *)timestampString {
+  NSDateFormatter *df = [[NSDateFormatter alloc] init];
+  df.dateFormat = @"yyyyMMdd-HHmmss";
+  df.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
+  return [df stringFromDate:[NSDate date]];
 }
 
 @end

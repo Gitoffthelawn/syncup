@@ -14,6 +14,7 @@ import { SearchModal } from './src/screens/SearchModal';
 import { CoachProvider, useCoach, type CoachTabKey } from './src/onboarding/coach/CoachContext';
 import { CoachOverlay } from './src/onboarding/coach/CoachOverlay';
 import { useOnboarding } from './src/onboarding/useOnboarding';
+import { AppReloadProvider } from './src/AppReload';
 import { colors } from './src/components/ui';
 
 type Tab = 'status' | 'folders' | 'devices' | 'settings';
@@ -28,14 +29,18 @@ const TABS: readonly { key: Tab; label: string }[] = [
 export default function App() {
   return (
     <SafeAreaProvider>
-      <SyncthingProvider>
-        <EventsProvider>
-          <RecentChangesProvider>
-            <SyncNotifier />
-            <Shell />
-          </RecentChangesProvider>
-        </EventsProvider>
-      </SyncthingProvider>
+      <AppReloadProvider>
+        {generation => (
+          <SyncthingProvider key={generation}>
+            <EventsProvider>
+              <RecentChangesProvider>
+                <SyncNotifier />
+                <Shell />
+              </RecentChangesProvider>
+            </EventsProvider>
+          </SyncthingProvider>
+        )}
+      </AppReloadProvider>
     </SafeAreaProvider>
   );
 }

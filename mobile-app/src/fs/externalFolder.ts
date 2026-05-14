@@ -94,3 +94,29 @@ export function filesystemTypeForExternal(path: string): 'saf' | 'basic' {
   if (Platform.OS === 'android' && path.startsWith('content://')) return 'saf';
   return 'basic';
 }
+
+/**
+ * True for an Android external folder whose access depends on All Files
+ * Access rather than a per-tree SAF grant. Restored backups from a device
+ * that used All Files Access store such POSIX paths.
+ */
+export function externalFolderNeedsAllFilesAccess(folder: FolderConfig): boolean {
+  return (
+    Platform.OS === 'android' &&
+    folder.filesystemType !== 'saf' &&
+    !folder.path.startsWith('content://')
+  );
+}
+
+/**
+ * Whether the daemon can currently reach an external folder. SAF folders are
+ * gated by a persisted tree-URI grant; POSIX folders (added via, or restored
+ * into, All Files Access) are gated by that permission instead — checking the
+ * SAF grant for them always fails and leaves a stale "revoked" banner.
+ */
+export function validateExternalFolderAccess(folder: FolderConfig): boolean {
+  if (externalFolderNeedsAllFilesAccess(folder)) {
+    return GoBridge.hasAllFilesAccess();
+  }
+  return GoBridge.validateExternalFolder(folder.path);
+}

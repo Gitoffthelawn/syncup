@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  AppState,
   Linking,
   Modal,
   Platform,
@@ -21,7 +22,12 @@ import type { DbStatus, DeviceConfig, FolderConfig, FolderError } from '../api/t
 import { colors, formatBytes, Progress } from '../components/ui';
 import { removeDir } from '../fs/bridgeFs';
 import GoBridge from '../GoServerBridgeJSI';
-import { isExternalFolder, pickExternalFolderWithICloudWarning } from '../fs/externalFolder';
+import {
+  isExternalFolder,
+  pickExternalFolderWithICloudWarning,
+  externalFolderNeedsAllFilesAccess,
+  validateExternalFolderAccess,
+} from '../fs/externalFolder';
 import { FolderIgnoresEditor } from './FolderIgnoresEditor';
 import { FolderAdvancedEditor } from './FolderAdvancedEditor';
 import { FolderVersioningEditor } from './FolderVersioningEditor';
@@ -124,10 +130,8 @@ export function FolderDetailModal({
       if (d.encryptionPassword) pwMap[d.deviceID] = d.encryptionPassword;
     }
     setEncryptionPasswords(pwMap);
-    // Check external-folder access on open. Covers Android SAF and iOS
-    // security-scoped bookmarks under one branch.
     if (isExternalFolder(folder, foldersRoot)) {
-      setExternalAccessValid(GoBridge.validateExternalFolder(folder.path));
+      setExternalAccessValid(validateExternalFolderAccess(folder));
     } else {
       setExternalAccessValid(true);
     }
@@ -167,6 +171,22 @@ export function FolderDetailModal({
       .then(setObsidianInstalled)
       .catch(() => setObsidianInstalled(false));
   }, [visible, folder, client, foldersRoot]);
+
+  const recheckExternalAccess = useCallback(() => {
+    if (folder && isExternalFolder(folder, foldersRoot)) {
+      setExternalAccessValid(validateExternalFolderAccess(folder));
+    }
+  }, [folder, foldersRoot]);
+
+  // Re-validate when the app returns to foreground so the banner clears after
+  // the user grants All Files Access in the system settings screen.
+  useEffect(() => {
+    if (!visible) return;
+    const sub = AppState.addEventListener('change', s => {
+      if (s === 'active') recheckExternalAccess();
+    });
+    return () => sub.remove();
+  }, [visible, recheckExternalAccess]);
 
   const peers = useMemo(
     () => allDevices.filter(d => d.deviceID !== info?.deviceId),
@@ -626,14 +646,26 @@ export function FolderDetailModal({
               {isExternal && !externalAccessValid && (
                 <View style={styles.safPermWarn}>
                   <Text style={styles.safPermWarnText}>
-                    Storage access was revoked. This folder cannot sync until you re-grant access.
+                    {externalFolderNeedsAllFilesAccess(folder)
+                      ? 'This folder is outside the app sandbox and needs the "All files access" permission to sync. This is common after restoring a backup.'
+                      : 'Storage access was revoked. This folder cannot sync until you re-grant access.'}
                   </Text>
                   <TouchableOpacity
                     style={styles.safPermBtn}
                     onPress={() => {
+                      if (externalFolderNeedsAllFilesAccess(folder)) {
+                        // A SAF pick can't restore access to a stored POSIX
+                        // path; only the system permission can.
+                        try {
+                          GoBridge.requestAllFilesAccess();
+                        } catch (e) {
+                          setError(e instanceof Error ? e.message : String(e));
+                        }
+                        return;
+                      }
                       pickExternalFolderWithICloudWarning(picked => {
                         if (!picked) return;
-                        if (picked.path === folder.path) {
+                        if (validateExternalFolderAccess(folder)) {
                           setExternalAccessValid(true);
                         } else {
                           Alert.alert(
@@ -644,7 +676,11 @@ export function FolderDetailModal({
                       });
                     }}
                   >
-                    <Text style={styles.safPermBtnText}>Re-grant access</Text>
+                    <Text style={styles.safPermBtnText}>
+                      {externalFolderNeedsAllFilesAccess(folder)
+                        ? 'Grant All files access'
+                        : 'Re-grant access'}
+                    </Text>
                   </TouchableOpacity>
                 </View>
               )}

@@ -599,6 +599,143 @@ class GoServerBridgeModule(reactContext: ReactApplicationContext) :
         // Spec is shared cross-platform so we accept the call but ignore it.
     }
 
+    override fun exportConfig(asyncStorageJson: String): String {
+        val activity = ctx.currentActivity as? MainActivity
+            ?: return jsonError("activity not available")
+        val suggested = "syncup-backup-${java.text.SimpleDateFormat("yyyyMMdd-HHmmss", java.util.Locale.US).format(java.util.Date())}.zip"
+        val uri = activity.pickBackupSaveBlocking(suggested) ?: return ""
+        val cache = java.io.File(ctx.cacheDir, "backup-export.zip")
+        val prefsCache = java.io.File(ctx.cacheDir, "syncup-prefs.json")
+        val asyncCache = java.io.File(ctx.cacheDir, "syncup-async.json")
+        try {
+            cache.delete()
+            prefsCache.delete()
+            asyncCache.delete()
+            prefsCache.writeText(SyncthingPrefs.exportAsJson(ctx))
+
+            val extras = org.json.JSONArray().apply {
+                put(org.json.JSONObject().apply {
+                    put("name", "syncup-prefs.json")
+                    put("path", prefsCache.absolutePath)
+                })
+                if (asyncStorageJson.isNotEmpty() && asyncStorageJson != "{}") {
+                    asyncCache.writeText(asyncStorageJson)
+                    put(org.json.JSONObject().apply {
+                        put("name", "syncup-async.json")
+                        put("path", asyncCache.absolutePath)
+                    })
+                }
+            }.toString()
+
+            val result = mobileAPI.exportConfig("", cache.absolutePath, extras)
+                ?: return jsonError("nil result")
+            val obj = org.json.JSONObject(result)
+            if (obj.has("error")) return jsonError(obj.optString("error", "export failed"))
+
+            ctx.contentResolver.openOutputStream(uri, "wt")?.use { out ->
+                java.io.FileInputStream(cache).use { input ->
+                    input.copyTo(out)
+                }
+            } ?: return jsonError("could not open output stream")
+
+            val displayName = queryDisplayName(uri) ?: uri.lastPathSegment ?: suggested
+            return org.json.JSONObject().apply {
+                put("ok", true)
+                put("path", uri.toString())
+                put("displayName", displayName)
+            }.toString()
+        } catch (e: Exception) {
+            android.util.Log.e(NAME, "exportConfig failed", e)
+            return jsonError(e.message ?: "export failed")
+        } finally {
+            cache.delete()
+            prefsCache.delete()
+            asyncCache.delete()
+        }
+    }
+
+    override fun importConfig(password: String): String {
+        val activity = ctx.currentActivity as? MainActivity
+            ?: return jsonError("activity not available")
+        val uri = activity.pickBackupOpenBlocking() ?: return ""
+        val cache = java.io.File(ctx.cacheDir, "backup-import.zip")
+        try {
+            cache.delete()
+            ctx.contentResolver.openInputStream(uri)?.use { input ->
+                java.io.FileOutputStream(cache).use { out ->
+                    input.copyTo(out)
+                }
+            } ?: return jsonError("could not open input stream")
+
+            val dataDir = Paths.syncthingDir(ctx)
+            val result = mobileAPI.importConfig(cache.absolutePath, dataDir, password)
+                ?: return jsonError("nil result")
+            val obj = org.json.JSONObject(result)
+            if (obj.has("error")) return jsonError(obj.optString("error", "import failed"))
+
+            var prefsImported = false
+            if (obj.optBoolean("importedPrefs", false)) {
+                val prefsFile = java.io.File(dataDir, "syncup-prefs.json")
+                if (prefsFile.exists()) {
+                    prefsImported = try {
+                        SyncthingPrefs.importFromJson(ctx, prefsFile.readText())
+                        true
+                    } catch (e: Exception) {
+                        android.util.Log.e(NAME, "prefs import failed", e)
+                        false
+                    } finally {
+                        prefsFile.delete()
+                    }
+                }
+            }
+
+            var asyncJson = ""
+            if (obj.optBoolean("importedAsync", false)) {
+                val asyncFile = java.io.File(dataDir, "syncup-async.json")
+                if (asyncFile.exists()) {
+                    try {
+                        asyncJson = asyncFile.readText()
+                    } catch (e: Exception) {
+                        android.util.Log.e(NAME, "async read failed", e)
+                    } finally {
+                        asyncFile.delete()
+                    }
+                }
+            }
+
+            return org.json.JSONObject().apply {
+                put("ok", true)
+                put("path", dataDir)
+                put("displayName", queryDisplayName(uri) ?: uri.lastPathSegment ?: "")
+                put("importedPrefs", prefsImported)
+                put("asyncStorageJson", asyncJson)
+            }.toString()
+        } catch (e: Exception) {
+            android.util.Log.e(NAME, "importConfig failed", e)
+            return jsonError(e.message ?: "import failed")
+        } finally {
+            cache.delete()
+        }
+    }
+
+    private fun jsonError(msg: String): String =
+        org.json.JSONObject().apply {
+            put("ok", false)
+            put("error", msg)
+        }.toString()
+
+    private fun queryDisplayName(uri: Uri): String? = try {
+        ctx.contentResolver.query(
+            uri,
+            arrayOf(android.provider.OpenableColumns.DISPLAY_NAME),
+            null, null, null,
+        )?.use { c ->
+            if (c.moveToFirst()) c.getString(0) else null
+        }
+    } catch (e: Exception) {
+        null
+    }
+
     override fun openFolderInFileManager(path: String): Boolean {
         // "primary:" in DocumentsUI maps to /storage/emulated/0, so a
         // tree URI under the app-scoped path resolves fine.

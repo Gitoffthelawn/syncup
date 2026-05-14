@@ -241,6 +241,18 @@ void GoServerBridgeImpl::previewFileNative(facebook::jsi::Runtime &rt, facebook:
     NSString *p = [NSString stringWithUTF8String:pathsJson.utf8(rt).c_str()];
     [GoBridgeWrapper previewFile:p startIndex:(NSInteger)startIndex];
 }
+
+facebook::jsi::String GoServerBridgeImpl::exportConfig(facebook::jsi::Runtime &rt, facebook::jsi::String asyncStorageJson) {
+    NSString *json = [NSString stringWithUTF8String:asyncStorageJson.utf8(rt).c_str()];
+    NSString *result = [GoBridgeWrapper exportConfig:(json ?: @"{}")] ?: @"";
+    return facebook::jsi::String::createFromUtf8(rt, [result UTF8String]);
+}
+
+facebook::jsi::String GoServerBridgeImpl::importConfig(facebook::jsi::Runtime &rt, facebook::jsi::String password) {
+    NSString *pw = [NSString stringWithUTF8String:password.utf8(rt).c_str()];
+    NSString *result = [GoBridgeWrapper importConfig:(pw ?: @"")] ?: @"";
+    return facebook::jsi::String::createFromUtf8(rt, [result UTF8String]);
+}
 #endif
 
 @implementation GoServerBridge

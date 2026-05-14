@@ -20,7 +20,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import GoBridge from '../GoServerBridgeJSI';
+import { useAppReload } from '../AppReload';
 import { useSyncthing } from '../daemon/SyncthingContext';
+import { exportAsyncStorage, importAsyncStorage } from '../utils/asyncStorageBackup';
 import { useOnboarding } from '../onboarding/useOnboarding';
 import { useCoach } from '../onboarding/coach/CoachContext';
 import { useCoachTarget } from '../onboarding/coach/useCoachTarget';
@@ -176,6 +178,179 @@ export function SettingsScreen() {
     refreshStorageState();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const reloadApp = useAppReload();
+  const [backupBusy, setBackupBusy] = useState<null | 'export' | 'import'>(null);
+  const [passwordPrompt, setPasswordPrompt] = useState<{
+    retry: boolean;
+    resolve: (value: string | null) => void;
+  } | null>(null);
+  const [passwordDraft, setPasswordDraft] = useState('');
+
+  const handleExport = async () => {
+    if (backupBusy) return;
+    setBackupBusy('export');
+    try {
+      const asyncJson = await exportAsyncStorage();
+      const raw = GoBridge.exportConfig(asyncJson);
+      if (raw === '') return;
+      const res = JSON.parse(raw) as { ok?: boolean; error?: string; displayName?: string };
+      if (res.ok) {
+        Alert.alert('Backup saved', res.displayName ? `Saved as ${res.displayName}.` : 'Backup saved.');
+      } else {
+        Alert.alert('Backup failed', res.error || 'Unknown error');
+      }
+    } catch (e) {
+      Alert.alert('Backup failed', e instanceof Error ? e.message : String(e));
+    } finally {
+      setBackupBusy(null);
+    }
+  };
+
+  type ImportOutcome =
+    | { kind: 'cancelled' }
+    | { kind: 'needsPassword' }
+    | { kind: 'wrongPassword'; message: string }
+    | { kind: 'error'; message: string }
+    | { kind: 'ok'; importedPrefs: boolean; asyncJson: string };
+
+  const attemptImport = (password: string): ImportOutcome => {
+    let raw: string;
+    try {
+      raw = GoBridge.importConfig(password);
+    } catch (e) {
+      return { kind: 'error', message: e instanceof Error ? e.message : String(e) };
+    }
+    if (raw === '') return { kind: 'cancelled' };
+    let res: {
+      ok?: boolean;
+      error?: string;
+      importedPrefs?: boolean;
+      asyncStorageJson?: string;
+    };
+    try {
+      res = JSON.parse(raw);
+    } catch {
+      return { kind: 'error', message: 'bridge returned invalid JSON' };
+    }
+    if (res.ok) {
+      return {
+        kind: 'ok',
+        importedPrefs: !!res.importedPrefs,
+        asyncJson: typeof res.asyncStorageJson === 'string' ? res.asyncStorageJson : '',
+      };
+    }
+    const msg = res.error || 'Unknown error';
+    if (msg.includes('password required')) return { kind: 'needsPassword' };
+    if (msg.includes('wrong password')) return { kind: 'wrongPassword', message: msg };
+    return { kind: 'error', message: msg };
+  };
+
+  const promptPassword = (retryMessage: string | null): Promise<string | null> =>
+    new Promise(resolve => {
+      setPasswordDraft('');
+      setPasswordPrompt({ retry: !!retryMessage, resolve });
+    });
+
+  const runImport = async () => {
+    setBackupBusy('import');
+    try {
+      try {
+        GoBridge.stopServer();
+      } catch {
+        // importConfig refuses if globalClient is still set; best-effort is fine
+      }
+
+      let outcome = attemptImport('');
+      while (outcome.kind === 'needsPassword' || outcome.kind === 'wrongPassword') {
+        const retryMsg = outcome.kind === 'wrongPassword' ? 'Wrong password. Try again.' : null;
+        const pw = await promptPassword(retryMsg);
+        if (pw === null || pw === '') break;
+        outcome = attemptImport(pw);
+      }
+
+      if (outcome.kind === 'cancelled' || outcome.kind === 'needsPassword' || outcome.kind === 'wrongPassword') {
+        try {
+          GoBridge.startServer();
+        } catch {
+          // ignore
+        }
+        return;
+      }
+      if (outcome.kind === 'error') {
+        try {
+          GoBridge.startServer();
+        } catch {
+          // ignore
+        }
+        Alert.alert('Restore failed', outcome.message);
+        return;
+      }
+
+      let asyncRestored = 0;
+      if (outcome.asyncJson) {
+        try {
+          asyncRestored = await importAsyncStorage(outcome.asyncJson);
+        } catch {
+          // ignore
+        }
+      }
+
+      reloadApp();
+
+      const parts = ['Identity and config restored'];
+      if (outcome.importedPrefs) parts.push('device preferences restored');
+      if (asyncRestored > 0) parts.push(`${asyncRestored} app settings restored`);
+      const summary = parts.join('; ') + '.';
+
+      // Folders restored from a backup often point at external-storage paths
+      // that only sync once All Files Access is granted. The user has no way
+      // to know this, so offer the permission screen directly.
+      let needsAllFiles = false;
+      if (isAndroid) {
+        try {
+          needsAllFiles = !GoBridge.hasAllFilesAccess();
+        } catch {
+          needsAllFiles = false;
+        }
+      }
+      if (needsAllFiles) {
+        Alert.alert(
+          'Restore complete',
+          summary +
+            '\n\nSome restored folders may be stored outside the app and need the "All files access" permission to sync. Grant it now?',
+          [
+            { text: 'Later', style: 'cancel' },
+            {
+              text: 'Grant access',
+              onPress: () => {
+                try {
+                  GoBridge.requestAllFilesAccess();
+                } catch {
+                  // ignore; user can grant later from the folder banner
+                }
+              },
+            },
+          ],
+        );
+      } else {
+        Alert.alert('Restore complete', summary);
+      }
+    } finally {
+      setBackupBusy(null);
+    }
+  };
+
+  const confirmImport = () => {
+    Alert.alert(
+      'Restore backup?',
+      "This replaces this device's identity, folder/device config, and app settings with the contents of the chosen backup. Sync will stop briefly while files are swapped.",
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Choose file', style: 'destructive', onPress: () => { void runImport(); } },
+      ],
+    );
+  };
 
   const confirmRestart = () => {
     Alert.alert(
@@ -462,6 +637,39 @@ export function SettingsScreen() {
       />
 
       <Card>
+        <CardTitle>Backup & restore</CardTitle>
+        <Text style={styles.aboutText}>
+          Save this device's identity (cert.pem, key.pem), folder/device config, and
+          {isAndroid ? ' device preferences' : ' app settings'} to a zip you can move to another device
+          or keep as a recovery copy. Restoring replaces the current identity with the one in the chosen backup.
+        </Text>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={handleExport}
+          disabled={!!backupBusy}
+        >
+          <Text style={styles.buttonText}>
+            {backupBusy === 'export' ? 'Working...' : 'Export backup'}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.button, styles.buttonDanger]}
+          onPress={confirmImport}
+          disabled={!!backupBusy}
+        >
+          <Text style={[styles.buttonText, styles.buttonDangerText]}>
+            {backupBusy === 'import' ? 'Working...' : 'Restore from backup'}
+          </Text>
+        </TouchableOpacity>
+        <Text style={styles.hint}>
+          Syncthing-Fork backups import as-is, including password-protected (AES-256) archives;
+          you'll be prompted for the password. The fork's extras (https keys, index database) are
+          accepted but only the identity, config{isAndroid ? ', and device preferences' : ''} are
+          actually restored.
+        </Text>
+      </Card>
+
+      <Card>
         <CardTitle>Stop app</CardTitle>
         <Text style={styles.aboutText}>
           Fully stops SyncUp. Sync halts, the background notification goes away, and nothing runs in the background until you open the app again.
@@ -522,6 +730,66 @@ export function SettingsScreen() {
           <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
             <PhotoBackupSettings onBack={() => setPhotoBackupOpen(false)} />
           </SafeAreaView>
+        </Modal>
+      )}
+
+      {passwordPrompt && (
+        <Modal
+          visible
+          transparent
+          animationType="fade"
+          onRequestClose={() => {
+            passwordPrompt.resolve(null);
+            setPasswordPrompt(null);
+          }}
+        >
+          <View style={styles.pwBackdrop}>
+            <View style={styles.pwBox}>
+              <Text style={styles.pwTitle}>Backup password</Text>
+              <Text style={styles.pwBody}>
+                {passwordPrompt.retry
+                  ? 'Wrong password. Try again.'
+                  : 'This backup is encrypted. Enter the password it was created with.'}
+              </Text>
+              <TextInput
+                value={passwordDraft}
+                onChangeText={setPasswordDraft}
+                secureTextEntry
+                autoFocus
+                autoCapitalize="none"
+                autoCorrect={false}
+                placeholder="Password"
+                placeholderTextColor={colors.textDim}
+                style={styles.pwInput}
+                onSubmitEditing={() => {
+                  passwordPrompt.resolve(passwordDraft);
+                  setPasswordPrompt(null);
+                }}
+              />
+              <View style={styles.pwButtonRow}>
+                <TouchableOpacity
+                  style={styles.pwButton}
+                  onPress={() => {
+                    passwordPrompt.resolve(null);
+                    setPasswordPrompt(null);
+                  }}
+                >
+                  <Text style={styles.pwButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.pwButton, styles.pwButtonPrimary]}
+                  onPress={() => {
+                    passwordPrompt.resolve(passwordDraft);
+                    setPasswordPrompt(null);
+                  }}
+                >
+                  <Text style={[styles.pwButtonText, styles.pwButtonPrimaryText]}>
+                    Decrypt
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
         </Modal>
       )}
     </ScrollView>
@@ -709,4 +977,38 @@ const styles = StyleSheet.create({
   },
   nameSaveText: { color: '#fff', fontSize: 13, fontWeight: '600' },
   nameErr: { color: colors.error, fontSize: 12, marginTop: 6 },
+  pwBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  pwBox: {
+    backgroundColor: colors.card,
+    borderRadius: 14,
+    padding: 20,
+  },
+  pwTitle: { color: colors.text, fontSize: 17, fontWeight: '600' },
+  pwBody: { color: colors.textDim, fontSize: 13, lineHeight: 18, marginTop: 8 },
+  pwInput: {
+    marginTop: 16,
+    color: colors.text,
+    backgroundColor: colors.bg,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 15,
+  },
+  pwButtonRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 16,
+    gap: 8,
+  },
+  pwButton: { paddingVertical: 10, paddingHorizontal: 14, borderRadius: 8 },
+  pwButtonPrimary: { backgroundColor: colors.accent },
+  pwButtonText: { color: colors.accent, fontSize: 14, fontWeight: '600' },
+  pwButtonPrimaryText: { color: '#fff' },
 });

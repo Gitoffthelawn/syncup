@@ -50,6 +50,8 @@ export interface GoServerBridgeInterface {
   requestAllFilesAccess(): boolean;
   listLocalSubdirs(path: string): string;
   mkdirLocalSubdir(parent: string, name: string): string;
+  exportConfig(asyncStorageJson: string): string;
+  importConfig(password: string): string;
 }
 
 class GoServerBridgeJSI implements GoServerBridgeInterface {
@@ -237,6 +239,14 @@ class GoServerBridgeJSI implements GoServerBridgeInterface {
 
   mkdirLocalSubdir(parent: string, name: string): string {
     return NativeGoServerBridge.mkdirLocalSubdir(parent, name);
+  }
+
+  exportConfig(asyncStorageJson: string): string {
+    return NativeGoServerBridge.exportConfig(asyncStorageJson);
+  }
+
+  importConfig(password: string): string {
+    return NativeGoServerBridge.importConfig(password);
   }
 }
 

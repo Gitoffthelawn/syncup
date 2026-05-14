@@ -11,6 +11,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	cryptozip "github.com/yeka/zip"
 )
 
 type MobileAPI struct{}
@@ -477,6 +479,287 @@ func (m *MobileAPI) RemoveDir(path string) string {
 	}
 	b, _ := json.Marshal(fsResultJSON{Path: abs})
 	return string(b)
+}
+
+// ExportConfig zips config.xml, cert.pem, key.pem from srcDataDir to
+// dstZipPath. extrasJSON is `[{"name":..., "path":...}, ...]` of additional
+// root-level entries.
+func (m *MobileAPI) ExportConfig(srcDataDir, dstZipPath, extrasJSON string) string {
+	if srcDataDir == "" {
+		srcDataDir = currentDataDir()
+	}
+	if srcDataDir == "" {
+		return marshalErr(errors.New("data dir not set"))
+	}
+	if dstZipPath == "" {
+		return marshalErr(errors.New("destination path is empty"))
+	}
+	for _, name := range backupFiles {
+		p := filepath.Join(srcDataDir, name)
+		if _, err := os.Stat(p); err != nil {
+			return marshalErr(errors.New("missing " + name + ": " + err.Error()))
+		}
+	}
+	var extras []struct {
+		Name string `json:"name"`
+		Path string `json:"path"`
+	}
+	if trimmed := strings.TrimSpace(extrasJSON); trimmed != "" && trimmed != "null" {
+		if err := json.Unmarshal([]byte(trimmed), &extras); err != nil {
+			return marshalErr(errors.New("extras json: " + err.Error()))
+		}
+	}
+	for _, e := range extras {
+		if e.Name == "" || filepath.Base(e.Name) != e.Name {
+			return marshalErr(errors.New("extras: invalid name " + e.Name))
+		}
+		if e.Path == "" {
+			return marshalErr(errors.New("extras: empty path for " + e.Name))
+		}
+	}
+	if err := os.MkdirAll(filepath.Dir(dstZipPath), 0o700); err != nil {
+		return marshalErr(err)
+	}
+	out, err := os.Create(dstZipPath)
+	if err != nil {
+		return marshalErr(err)
+	}
+	defer out.Close()
+	w := zip.NewWriter(out)
+	for _, name := range backupFiles {
+		if err := addBackupFile(w, filepath.Join(srcDataDir, name), name); err != nil {
+			_ = w.Close()
+			os.Remove(dstZipPath)
+			return marshalErr(err)
+		}
+	}
+	for _, e := range extras {
+		if err := addBackupFile(w, e.Path, e.Name); err != nil {
+			_ = w.Close()
+			os.Remove(dstZipPath)
+			return marshalErr(errors.New("extras " + e.Name + ": " + err.Error()))
+		}
+	}
+	if err := w.Close(); err != nil {
+		os.Remove(dstZipPath)
+		return marshalErr(err)
+	}
+	b, _ := json.Marshal(fsResultJSON{Path: dstZipPath})
+	return string(b)
+}
+
+// ImportConfig extracts config.xml, cert.pem, key.pem (required) plus
+// https-cert.pem, https-key.pem, syncup-prefs.json, syncup-async.json
+// (optional) from srcZipPath into dstDataDir. Syncthing-Fork extras
+// (sharedpreferences.dat, files under index-v2) are skipped. password
+// decrypts AES-encrypted archives; pass empty for unencrypted. Existing
+// files are renamed to .bak and rolled back on failure. Daemon must be
+// stopped before calling.
+func (m *MobileAPI) ImportConfig(srcZipPath, dstDataDir, password string) string {
+	if dstDataDir == "" {
+		dstDataDir = currentDataDir()
+	}
+	if dstDataDir == "" {
+		return marshalErr(errors.New("data dir not set"))
+	}
+	if srcZipPath == "" {
+		return marshalErr(errors.New("source path is empty"))
+	}
+	globalMu.Lock()
+	running := globalClient != nil
+	globalMu.Unlock()
+	if running {
+		return marshalErr(errors.New("daemon is running; stop it before import"))
+	}
+	r, err := cryptozip.OpenReader(srcZipPath)
+	if err != nil {
+		return marshalErr(err)
+	}
+	defer r.Close()
+
+	staged := make(map[string][]byte)
+	for _, f := range r.File {
+		cleaned := filepath.ToSlash(filepath.Clean(f.Name))
+		if strings.HasPrefix(cleaned, "/") || strings.HasPrefix(cleaned, "..") || strings.Contains(cleaned, "/../") {
+			return marshalErr(errors.New("unsafe zip entry: " + f.Name))
+		}
+		if strings.HasSuffix(f.Name, "/") || f.FileInfo().IsDir() {
+			continue
+		}
+		base := filepath.Base(cleaned)
+		want, ok := backupWantedFile(base)
+		if !ok {
+			continue
+		}
+		if f.IsEncrypted() {
+			if password == "" {
+				return marshalErr(errors.New("password required: archive is encrypted"))
+			}
+			f.SetPassword(password)
+		}
+		if f.UncompressedSize64 > maxBackupEntryBytes {
+			return marshalErr(errors.New(base + " too large"))
+		}
+		rc, err := f.Open()
+		if err != nil {
+			if f.IsEncrypted() {
+				return marshalErr(errors.New("wrong password: " + err.Error()))
+			}
+			return marshalErr(errors.New(base + ": " + err.Error()))
+		}
+		data, err := io.ReadAll(io.LimitReader(rc, int64(maxBackupEntryBytes)+1))
+		rc.Close()
+		if err != nil {
+			if f.IsEncrypted() {
+				return marshalErr(errors.New("wrong password (decrypt failed): " + err.Error()))
+			}
+			return marshalErr(err)
+		}
+		if int64(len(data)) > int64(maxBackupEntryBytes) {
+			return marshalErr(errors.New(base + " too large"))
+		}
+		staged[want] = data
+	}
+	for _, n := range backupFiles {
+		if _, ok := staged[n]; !ok {
+			return marshalErr(errors.New("archive missing " + n))
+		}
+	}
+	if err := validateConfigXML(staged[configFileName]); err != nil {
+		return marshalErr(err)
+	}
+	if err := validatePEM(staged[certFileName]); err != nil {
+		return marshalErr(errors.New("invalid cert.pem: " + err.Error()))
+	}
+	if err := validatePEM(staged[keyFileName]); err != nil {
+		return marshalErr(errors.New("invalid key.pem: " + err.Error()))
+	}
+	if data, ok := staged[httpsCertFileName]; ok {
+		if err := validatePEM(data); err != nil {
+			delete(staged, httpsCertFileName)
+		}
+	}
+	if data, ok := staged[httpsKeyFileName]; ok {
+		if err := validatePEM(data); err != nil {
+			delete(staged, httpsKeyFileName)
+		}
+	}
+
+	if err := os.MkdirAll(dstDataDir, 0o700); err != nil {
+		return marshalErr(err)
+	}
+
+	writeOrder := append([]string(nil), backupFiles...)
+	for _, opt := range optionalBackupFiles {
+		if _, ok := staged[opt]; ok {
+			writeOrder = append(writeOrder, opt)
+		}
+	}
+
+	backedUp := make([]string, 0, len(writeOrder))
+	for _, n := range writeOrder {
+		live := filepath.Join(dstDataDir, n)
+		bak := live + ".bak"
+		_ = os.Remove(bak)
+		if _, err := os.Stat(live); err == nil {
+			if err := os.Rename(live, bak); err != nil {
+				rollbackBackup(dstDataDir, backedUp)
+				return marshalErr(err)
+			}
+			backedUp = append(backedUp, n)
+		}
+	}
+	for i, n := range writeOrder {
+		live := filepath.Join(dstDataDir, n)
+		if err := os.WriteFile(live, staged[n], 0o600); err != nil {
+			for j := 0; j < i; j++ {
+				os.Remove(filepath.Join(dstDataDir, writeOrder[j]))
+			}
+			rollbackBackup(dstDataDir, backedUp)
+			return marshalErr(err)
+		}
+	}
+	for _, n := range backedUp {
+		os.Remove(filepath.Join(dstDataDir, n+".bak"))
+	}
+
+	_, importedPrefs := staged[prefsFileName]
+	_, importedAsync := staged[asyncFileName]
+	res := struct {
+		Path           string `json:"path"`
+		ImportedPrefs  bool   `json:"importedPrefs"`
+		ImportedAsync  bool   `json:"importedAsync"`
+	}{Path: dstDataDir, ImportedPrefs: importedPrefs, ImportedAsync: importedAsync}
+	b, _ := json.Marshal(res)
+	return string(b)
+}
+
+func backupWantedFile(base string) (string, bool) {
+	switch base {
+	case configFileName, certFileName, keyFileName,
+		httpsCertFileName, httpsKeyFileName, prefsFileName, asyncFileName:
+		return base, true
+	}
+	return "", false
+}
+
+var backupFiles = []string{configFileName, certFileName, keyFileName}
+var optionalBackupFiles = []string{httpsCertFileName, httpsKeyFileName, prefsFileName, asyncFileName}
+
+const (
+	httpsCertFileName = "https-cert.pem"
+	httpsKeyFileName  = "https-key.pem"
+	prefsFileName     = "syncup-prefs.json"
+	asyncFileName     = "syncup-async.json"
+)
+
+const maxBackupEntryBytes = 32 * 1024 * 1024
+
+func addBackupFile(w *zip.Writer, srcPath, name string) error {
+	in, err := os.Open(srcPath)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+	hdr := &zip.FileHeader{Name: name, Method: zip.Deflate}
+	hdr.SetMode(0o600)
+	writer, err := w.CreateHeader(hdr)
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(writer, in)
+	return err
+}
+
+func validateConfigXML(data []byte) error {
+	trimmed := strings.TrimSpace(string(data))
+	if trimmed == "" {
+		return errors.New("config.xml is empty")
+	}
+	if !strings.Contains(trimmed, "<configuration") {
+		return errors.New("config.xml: missing <configuration> root")
+	}
+	return nil
+}
+
+func validatePEM(data []byte) error {
+	if len(data) == 0 {
+		return errors.New("empty")
+	}
+	s := string(data)
+	if !strings.Contains(s, "-----BEGIN") || !strings.Contains(s, "-----END") {
+		return errors.New("missing PEM markers")
+	}
+	return nil
+}
+
+func rollbackBackup(dataDir string, backedUp []string) {
+	for _, n := range backedUp {
+		live := filepath.Join(dataDir, n)
+		bak := live + ".bak"
+		_ = os.Remove(live)
+		_ = os.Rename(bak, live)
+	}
 }
 
 // MkdirSubdir creates name under parent (must be sandboxed) and returns

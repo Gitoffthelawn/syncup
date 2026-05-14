@@ -65,6 +65,9 @@ public:
     facebook::jsi::String mkdirLocalSubdir(facebook::jsi::Runtime &rt, facebook::jsi::String parent, facebook::jsi::String name);
     // iOS-only: present QLPreviewController on a list of local file paths.
     void previewFileNative(facebook::jsi::Runtime &rt, facebook::jsi::String pathsJson, double startIndex);
+    // Backup / restore. Returns JSON (see NativeGoServerBridge.ts).
+    facebook::jsi::String exportConfig(facebook::jsi::Runtime &rt, facebook::jsi::String asyncStorageJson);
+    facebook::jsi::String importConfig(facebook::jsi::Runtime &rt, facebook::jsi::String password);
 };
 #endif
 

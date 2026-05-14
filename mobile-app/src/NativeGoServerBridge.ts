@@ -118,6 +118,8 @@ export interface Spec extends TurboModule {
    * Android (use the JS-side FilePreviewModal instead).
    */
   readonly previewFileNative: (pathsJson: string, startIndex: number) => void;
+  readonly exportConfig: (asyncStorageJson: string) => string;
+  readonly importConfig: (password: string) => string;
 }
 
 export default TurboModuleRegistry.getEnforcing<Spec>('GoServerBridge');

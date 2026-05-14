@@ -17,6 +17,7 @@
 		BM01234567890ABC12345002 /* BackgroundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BM01234567890ABC12345001 /* BackgroundManager.swift */; };
 		BM01234567890ABC12345004 /* BackgroundErrorNotifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = BM01234567890ABC12345003 /* BackgroundErrorNotifier.swift */; };
 		BM01234567890ABC12345006 /* AppShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = BM01234567890ABC12345005 /* AppShortcuts.swift */; };
+		BP01234567890ABC12345002 /* BackupPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = BP01234567890ABC12345001 /* BackupPicker.swift */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 		G0S1234567890ABC12345678 /* GoServerBridge.mm in Sources */ = {isa = PBXBuildFile; fileRef = G0S1234567890ABC12345679 /* GoServerBridge.mm */; };
 		QL01234567890ABC12345002 /* QuickLookPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = QL01234567890ABC12345001 /* QuickLookPresenter.swift */; };
@@ -38,6 +39,7 @@
 		BM01234567890ABC12345001 /* BackgroundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BackgroundManager.swift; path = syncup/BackgroundManager.swift; sourceTree = "<group>"; };
 		BM01234567890ABC12345003 /* BackgroundErrorNotifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BackgroundErrorNotifier.swift; path = syncup/BackgroundErrorNotifier.swift; sourceTree = "<group>"; };
 		BM01234567890ABC12345005 /* AppShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppShortcuts.swift; path = syncup/AppShortcuts.swift; sourceTree = "<group>"; };
+		BP01234567890ABC12345001 /* BackupPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BackupPicker.swift; path = syncup/BackupPicker.swift; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = syncup/AppDelegate.swift; sourceTree = "<group>"; };
 		FB0085F001083A8C91ADF71C /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = syncup/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
@@ -69,6 +71,7 @@
 				G0S1234567890ABC12345680 /* GoServerBridge.h */,
 				G0S1234567890ABC12345679 /* GoServerBridge.mm */,
 				SF01234567890ABC12345001 /* ScopedFolderStore.swift */,
+				BP01234567890ABC12345001 /* BackupPicker.swift */,
 				QL01234567890ABC12345001 /* QuickLookPresenter.swift */,
 				BB2F792B24A3F905000567C9 /* Supporting */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
@@ -362,6 +365,7 @@
 				949EB339D788314DE425296D /* ExpoModulesProvider.swift in Sources */,
 				0C823C245A529D0F8E0CEB71 /* GoBridgeWrapper.mm in Sources */,
 				SF01234567890ABC12345002 /* ScopedFolderStore.swift in Sources */,
+				BP01234567890ABC12345002 /* BackupPicker.swift in Sources */,
 				QL01234567890ABC12345002 /* QuickLookPresenter.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

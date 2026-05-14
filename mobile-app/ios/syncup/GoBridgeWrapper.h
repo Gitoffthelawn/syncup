@@ -71,4 +71,8 @@
 /// pathsJson is a JSON array of absolute paths. Asynchronous; returns immediately.
 + (void)previewFile:(NSString *)pathsJson startIndex:(NSInteger)startIndex;
 
++ (NSString * _Nonnull)exportConfig:(NSString * _Nonnull)asyncStorageJson;
+
++ (NSString * _Nonnull)importConfig:(NSString * _Nonnull)password;
+
 @end
