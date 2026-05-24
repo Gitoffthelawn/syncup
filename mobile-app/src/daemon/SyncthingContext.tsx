@@ -7,6 +7,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import { AppState, Platform } from 'react-native';
 import GoBridge from '../GoServerBridgeJSI';
 import { SyncthingClient } from '../api/syncthing';
 
@@ -35,29 +36,103 @@ interface SyncthingContextValue {
 
 const Ctx = createContext<SyncthingContextValue | null>(null);
 
+async function pingDaemon(
+  guiAddress: string,
+  apiKey: string,
+  timeoutMs: number,
+): Promise<boolean> {
+  if (!guiAddress || !apiKey) return false;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(`http://${guiAddress}/rest/system/ping`, {
+      headers: { 'X-API-Key': apiKey },
+      signal: controller.signal,
+    });
+    return res.ok;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function sameInfo(prev: DaemonInfo | null, next: DaemonInfo): boolean {
+  if (!prev) return false;
+  return (
+    prev.port === next.port &&
+    prev.apiKey === next.apiKey &&
+    prev.guiAddress === next.guiAddress &&
+    prev.dataDir === next.dataDir &&
+    prev.foldersRoot === next.foldersRoot
+  );
+}
+
+function readNativeInfo(): DaemonInfo | null {
+  const port = GoBridge.startServer();
+  if (port <= 0) return null;
+  return {
+    port,
+    apiKey: GoBridge.getApiKey(),
+    deviceId: GoBridge.getDeviceId(),
+    guiAddress: GoBridge.getGuiAddress(),
+    dataDir: GoBridge.getDataDir(),
+    foldersRoot: GoBridge.getFoldersRoot(),
+  };
+}
+
 export function SyncthingProvider({ children }: { children: React.ReactNode }) {
   const [info, setInfo] = useState<DaemonInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
   const startedRef = useRef(false);
+  const verifyingRef = useRef(false);
 
   const start = useCallback(() => {
     try {
-      const port = GoBridge.startServer();
-      if (port <= 0) {
+      const next = readNativeInfo();
+      if (!next) {
         setError('startServer returned 0 - see native logs');
         return;
       }
-      setInfo({
-        port,
-        apiKey: GoBridge.getApiKey(),
-        deviceId: GoBridge.getDeviceId(),
-        guiAddress: GoBridge.getGuiAddress(),
-        dataDir: GoBridge.getDataDir(),
-        foldersRoot: GoBridge.getFoldersRoot(),
-      });
+      setInfo(next);
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
+    }
+  }, []);
+
+  const verifyAndRecover = useCallback(async () => {
+    if (verifyingRef.current) return;
+    verifyingRef.current = true;
+    try {
+      const first = readNativeInfo();
+      if (!first) {
+        setError('startServer returned 0 - see native logs');
+        return;
+      }
+      setInfo(prev => (sameInfo(prev, first) ? prev : first));
+      setError(null);
+
+      const alive = await pingDaemon(first.guiAddress, first.apiKey, 2000);
+      if (alive) return;
+
+      try {
+        GoBridge.stopServer();
+      } catch {
+        // ignore — recovery still proceeds
+      }
+      const recovered = readNativeInfo();
+      if (!recovered) {
+        setError('startServer returned 0 - see native logs');
+        return;
+      }
+      setInfo(prev => (sameInfo(prev, recovered) ? prev : recovered));
+      // Existing event long-poll / useResource retries pick up the fresh
+      // listener on their next tick; no need to re-ping here.
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      verifyingRef.current = false;
     }
   }, []);
 
@@ -79,12 +154,21 @@ export function SyncthingProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (startedRef.current) return;
     startedRef.current = true;
-    start();
+    void verifyAndRecover();
     // Mirror the AsyncStorage-backed vault registry to native UserDefaults
     // once on launch. Fixes the case where the app updates and native is
     // ahead/behind the JS-side persisted state.
     void import('../utils/vaultRegistry').then(m => m.pushRegistryToNative());
-  }, [start]);
+  }, [verifyAndRecover]);
+
+  useEffect(() => {
+    if (Platform.OS !== 'ios') return;
+    const sub = AppState.addEventListener('change', s => {
+      if (s !== 'active') return;
+      void verifyAndRecover();
+    });
+    return () => sub.remove();
+  }, [verifyAndRecover]);
 
   const client = useMemo(() => {
     if (!info || !info.apiKey || !info.guiAddress) return null;
