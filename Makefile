@@ -37,6 +37,12 @@ IOS_APP = mobile-app/ios/build/Build/Products/Release-iphonesimulator/syncup.app
 ANDROID_PACKAGE = com.siddarthkay.syncup
 ANDROID_APK = mobile-app/android/app/build/outputs/apk/release/app-release.apk
 
+# VERSION_NAME defaults to the VERSION file but can be overridden on the CLI,
+# e.g. for release-candidate tags where the tag (v1.1.14-rc1) carries the
+# version but the committed VERSION file still points at the last shipped
+# release. CI passes this explicitly when building from a tag.
+VERSION_NAME ?= $(shell cat VERSION 2>/dev/null | tr -d '[:space:]')
+
 setup:
 	@$(MAKE) -C backend setup
 	@$(MAKE) -C mobile-app install
@@ -56,14 +62,14 @@ patch-node-modules:
 release-android:
 	@$(MAKE) -C backend android $(if $(ANDROID_TARGETS),ANDROID_TARGETS=$(ANDROID_TARGETS))
 	@$(MAKE) -C mobile-app release-android \
-		VERSION_NAME=$(shell cat VERSION 2>/dev/null | tr -d '[:space:]') \
+		VERSION_NAME=$(VERSION_NAME) \
 		ANDROID_ABI=$(ANDROID_ABI)
 
 # PR Android build: .pr applicationId suffix, release-signed.
 pr-android:
 	@$(MAKE) -C backend android
 	@$(MAKE) -C mobile-app pr-android \
-		VERSION_NAME=$(shell cat VERSION 2>/dev/null | tr -d '[:space:]')
+		VERSION_NAME=$(VERSION_NAME)
 
 # One-shot: create + push certs/profiles to the match repo. Run this once,
 # on your Mac, after filling in .env.fastlane. Idempotent.

@@ -158,11 +158,19 @@ jobs:
           make setup
           make patch-node-modules
 
+      # Derive versionName from the pushed tag (v1.1.14, v1.1.14-rc1, ...).
+      - name: Determine version from tag
+        id: version
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
       - name: Build release APK (${{ matrix.abi }})
         run: |
           make release-android \
             ANDROID_TARGETS=${{ matrix.gomobile_target }} \
-            ANDROID_ABI=${{ matrix.abi }}
+            ANDROID_ABI=${{ matrix.abi }} \
+            VERSION_NAME=${{ steps.version.outputs.version }}
         env:
           RELEASE_KEYSTORE_PATH: /tmp/release.keystore
           RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
@@ -206,11 +214,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Read version from VERSION file
+      - name: Determine version from tag
         id: version
         run: |
-          VERSION=$(cat VERSION | tr -d '[:space:]')
-          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if [[ "$VERSION" == *-rc* ]]; then
+            echo "is_rc=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_rc=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Download all APKs
         uses: actions/download-artifact@v4
@@ -237,7 +250,11 @@ jobs:
             arm64-v8a versionCode (for F-Droid reproducible-build metadata):
             `${{ steps.stage.outputs.versioncode }}`
           append_body: true
-          draft: true
+          # RCs auto-publish as prereleases so F-Droid CI can pull them without
+          # waiting on a manual button click. Final releases stay draft so a
+          # human eyeballs the artifacts before they go public.
+          draft: ${{ steps.version.outputs.is_rc != 'true' }}
+          prerelease: ${{ steps.version.outputs.is_rc == 'true' }}
           generate_release_notes: true
           files: |
             apks/syncup-*.apk
