@@ -46,10 +46,11 @@ check-go:
 
 # Pin gomobile version explicitly to avoid suprises.
 # Format: v0.0.0-<UTC yyyymmddhhmmss>-<12-char commit prefix>
-# Commit:  https://github.com/golang/mobile/commit/2cfb76559b7b
+# Commit:  https://github.com/golang/mobile/commit/bebd421c7fa8
 # To bump: `go list -m -versions golang.org/x/mobile` (latest pseudo-version
 # is the last one printed; or pick a specific commit from the GitHub mirror).
 GOMOBILE_VERSION = v0.0.0-20260410095206-2cfb76559b7b
+GOMOBILE_VERSION = v0.0.0-20260508232728-bebd421c7fa8
 
 install-gomobile:
 	@echo "Installing gomobile and gobind ($(GOMOBILE_VERSION))..."
@@ -63,7 +64,7 @@ android: setup
 	@mkdir -p $(dir $(abspath $(ANDROID_OUTPUT)))
 	@rm -f $(REPRO_BUILD_DIR)
 	@ln -s $(abspath .) $(REPRO_BUILD_DIR)
-	@$(GO) get golang.org/x/mobile/bind
+	@$(GO) get golang.org/x/mobile/bind@$(GOMOBILE_VERSION)
 	@cd $(REPRO_BUILD_DIR) && \
 		GOPATH=$(GOPATH) PATH=$(GOPATH)/bin:$(GOROOT)/bin:$$PATH GOFLAGS=-trimpath $(GOMOBILE) bind \
 			-trimpath \
@@ -78,7 +79,7 @@ android: setup
 ios: setup
 	@echo "Building iOS XCFramework..."
 	@mkdir -p $(dir $(IOS_OUTPUT))
-	@$(GO) get golang.org/x/mobile/bind
+	@$(GO) get golang.org/x/mobile/bind@$(GOMOBILE_VERSION)
 	@GOPATH=$(GOPATH) PATH=$(GOPATH)/bin:$(GOROOT)/bin:$$PATH $(GOMOBILE) bind \
 		-target=ios \
 		-tags noassets \
