@@ -233,6 +233,7 @@ export function AddFolderModal({ visible, onClose, onAdded }: Props) {
         fsWatcherEnabled: !usesSaf,
         fsWatcherDelayS: 10,
         ignorePerms: true,
+        ignoreDelete: false,
         autoNormalize: true,
         paused: false,
         markerName: '.stfolder',

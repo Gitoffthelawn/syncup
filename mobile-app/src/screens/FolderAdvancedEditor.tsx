@@ -43,6 +43,7 @@ export function FolderAdvancedEditor({ folder, onBack, onSaved }: Props) {
   const [minDiskValue, setMinDiskValue] = useState(String(folder.minDiskFree?.value ?? 1));
   const [minDiskUnit, setMinDiskUnit] = useState(folder.minDiskFree?.unit ?? '%');
   const [ignorePerms, setIgnorePerms] = useState(folder.ignorePerms);
+  const [ignoreDelete, setIgnoreDelete] = useState(folder.ignoreDelete ?? false);
   const [syncOwnership, setSyncOwnership] = useState(folder.syncOwnership ?? false);
   const [sendOwnership, setSendOwnership] = useState(folder.sendOwnership ?? false);
   const [syncXattrs, setSyncXattrs] = useState(folder.syncXattrs ?? false);
@@ -58,6 +59,7 @@ export function FolderAdvancedEditor({ folder, onBack, onSaved }: Props) {
     setMinDiskValue(String(folder.minDiskFree?.value ?? 1));
     setMinDiskUnit(folder.minDiskFree?.unit ?? '%');
     setIgnorePerms(folder.ignorePerms);
+    setIgnoreDelete(folder.ignoreDelete ?? false);
     setSyncOwnership(folder.syncOwnership ?? false);
     setSendOwnership(folder.sendOwnership ?? false);
     setSyncXattrs(folder.syncXattrs ?? false);
@@ -71,6 +73,7 @@ export function FolderAdvancedEditor({ folder, onBack, onSaved }: Props) {
     if (Number(minDiskValue) !== (folder.minDiskFree?.value ?? 1)) return true;
     if (minDiskUnit !== (folder.minDiskFree?.unit ?? '%')) return true;
     if (ignorePerms !== folder.ignorePerms) return true;
+    if (ignoreDelete !== (folder.ignoreDelete ?? false)) return true;
     if (syncOwnership !== (folder.syncOwnership ?? false)) return true;
     if (sendOwnership !== (folder.sendOwnership ?? false)) return true;
     if (syncXattrs !== (folder.syncXattrs ?? false)) return true;
@@ -84,6 +87,7 @@ export function FolderAdvancedEditor({ folder, onBack, onSaved }: Props) {
     minDiskValue,
     minDiskUnit,
     ignorePerms,
+    ignoreDelete,
     syncOwnership,
     sendOwnership,
     syncXattrs,
@@ -111,6 +115,7 @@ export function FolderAdvancedEditor({ folder, onBack, onSaved }: Props) {
         order: pullOrder,
         minDiskFree: { value: diskNum, unit: minDiskUnit },
         ignorePerms,
+        ignoreDelete,
         syncOwnership,
         sendOwnership,
         syncXattrs,
@@ -244,6 +249,15 @@ export function FolderAdvancedEditor({ folder, onBack, onSaved }: Props) {
             hint="Skip comparing file mode bits. Recommended on FAT, exFAT, and most Android storage."
             value={ignorePerms}
             onValueChange={setIgnorePerms}
+          />
+        </Section>
+
+        <Section title="Deletions">
+          <SwitchRow
+            label="Ignore deletes"
+            hint="Don't apply deletions sent by other devices, so files deleted elsewhere are kept on this device. Set this on the device whose files you want to protect."
+            value={ignoreDelete}
+            onValueChange={setIgnoreDelete}
           />
         </Section>
 

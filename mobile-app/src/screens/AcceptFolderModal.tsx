@@ -127,6 +127,7 @@ export function AcceptFolderModal({ visible, offer, onClose, onAccepted }: Props
         fsWatcherEnabled: !usesSaf,
         fsWatcherDelayS: 10,
         ignorePerms: true,
+        ignoreDelete: false,
         autoNormalize: true,
         paused: false,
         markerName: '.stfolder',

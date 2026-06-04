@@ -63,6 +63,7 @@ export interface FolderConfig {
   fsWatcherEnabled: boolean;
   fsWatcherDelayS: number;
   ignorePerms: boolean;
+  ignoreDelete: boolean;
   autoNormalize: boolean;
   paused: boolean;
   markerName: string;
