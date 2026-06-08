@@ -49,9 +49,19 @@ function mkdirLocal(parent: string, name: string): string {
   return parsed.path;
 }
 
-// Primary external storage. Stable across Android 6+. Non-primary volumes
-// (SD cards, cloud DocumentsProviders) live elsewhere — those go through SAF.
-const EXTERNAL_ROOT = '/storage/emulated/0';
+const FALLBACK_ROOT = '/storage/emulated/0';
+let cachedExternalRoot: string | null = null;
+function externalRoot(): string {
+  if (cachedExternalRoot) return cachedExternalRoot;
+  let root = FALLBACK_ROOT;
+  try {
+    const resolved = GoBridge.getExternalStorageRoot();
+    if (resolved) root = resolved;
+  } catch {
+  }
+  cachedExternalRoot = root;
+  return root;
+}
 const ROOT_LABEL = 'Internal storage';
 
 interface Props {
@@ -66,12 +76,15 @@ interface Crumb {
 }
 
 function buildCrumbs(path: string): Crumb[] {
-  const crumbs: Crumb[] = [{ label: ROOT_LABEL, path: EXTERNAL_ROOT }];
-  if (path === EXTERNAL_ROOT) return crumbs;
-  const rel = path.slice(EXTERNAL_ROOT.length).replace(/^\/+/, '');
+  const root = externalRoot();
+  const crumbs: Crumb[] = [{ label: ROOT_LABEL, path: root }];
+  if (path === root) return crumbs;
+  const rel = path.startsWith(root)
+    ? path.slice(root.length).replace(/^\/+/, '')
+    : '';
   if (!rel) return crumbs;
   const parts = rel.split('/').filter(Boolean);
-  let acc = EXTERNAL_ROOT;
+  let acc = root;
   for (const part of parts) {
     acc = `${acc}/${part}`;
     crumbs.push({ label: part, path: acc });
@@ -80,7 +93,7 @@ function buildCrumbs(path: string): Crumb[] {
 }
 
 export function AndroidLocalBrowser({ visible, onCancel, onPick }: Props) {
-  const [path, setPath] = useState<string>(EXTERNAL_ROOT);
+  const [path, setPath] = useState<string>(externalRoot);
   const [entries, setEntries] = useState<FsEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -89,7 +102,7 @@ export function AndroidLocalBrowser({ visible, onCancel, onPick }: Props) {
 
   const crumbs = useMemo(() => buildCrumbs(path), [path]);
   const currentLabel = useMemo(() => {
-    if (path === EXTERNAL_ROOT) return ROOT_LABEL;
+    if (path === externalRoot()) return ROOT_LABEL;
     return path.split('/').filter(Boolean).pop() ?? ROOT_LABEL;
   }, [path]);
 
@@ -112,7 +125,7 @@ export function AndroidLocalBrowser({ visible, onCancel, onPick }: Props) {
 
   useEffect(() => {
     if (visible) {
-      setPath(EXTERNAL_ROOT);
+      setPath(externalRoot());
       setCreating(false);
       setNewName('');
     }

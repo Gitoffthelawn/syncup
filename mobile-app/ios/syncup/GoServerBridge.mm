@@ -231,6 +231,12 @@ facebook::jsi::String GoServerBridgeImpl::mkdirLocalSubdir(facebook::jsi::Runtim
     return facebook::jsi::String::createFromUtf8(rt, "{\"error\":\"unsupported on iOS\"}");
 }
 
+// Android-only concept (the All-Files-Access POSIX browser). iOS has no
+// equivalent external storage root, so return "" and let JS handle it.
+facebook::jsi::String GoServerBridgeImpl::getExternalStorageRoot(facebook::jsi::Runtime &rt) {
+    return facebook::jsi::String::createFromUtf8(rt, "");
+}
+
 // SAF-specific cache copy; Android delegates to SAFProvider, iOS no-op
 // (a scoped folder's path is already a real file URI the RN preview can load).
 facebook::jsi::String GoServerBridgeImpl::copySafFileToCache(facebook::jsi::Runtime &rt, facebook::jsi::String treeURI, facebook::jsi::String relativePath) {

@@ -563,6 +563,10 @@ class GoServerBridgeModule(reactContext: ReactApplicationContext) :
         }
     }
 
+    override fun getExternalStorageRoot(): String {
+        return android.os.Environment.getExternalStorageDirectory().absolutePath
+    }
+
     override fun hasAllFilesAccess(): Boolean {
         // Pre-API-30 devices have always-broad external storage; treat as "granted".
         if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.R) return true

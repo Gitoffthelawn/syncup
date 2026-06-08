@@ -63,6 +63,7 @@ public:
     bool requestAllFilesAccess(facebook::jsi::Runtime &rt);
     facebook::jsi::String listLocalSubdirs(facebook::jsi::Runtime &rt, facebook::jsi::String path);
     facebook::jsi::String mkdirLocalSubdir(facebook::jsi::Runtime &rt, facebook::jsi::String parent, facebook::jsi::String name);
+    facebook::jsi::String getExternalStorageRoot(facebook::jsi::Runtime &rt);
     // iOS-only: present QLPreviewController on a list of local file paths.
     void previewFileNative(facebook::jsi::Runtime &rt, facebook::jsi::String pathsJson, double startIndex);
     // Backup / restore. Returns JSON (see NativeGoServerBridge.ts).

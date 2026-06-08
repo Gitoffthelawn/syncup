@@ -106,6 +106,15 @@ export interface Spec extends TurboModule {
    */
   readonly mkdirLocalSubdir: (parent: string, name: string) => string;
   /**
+   * Android-only: absolute path of the primary external storage root, as
+   * resolved by Environment.getExternalStorageDirectory(). This is usually
+   * `/storage/emulated/0`, but under a secondary Android user (e.g. Private
+   * Space, work profile) it is `/storage/emulated/<userId>`. The All Files
+   * Access browser uses this as its starting root so it doesn't assume the
+   * hardcoded primary path. Returns "" on iOS.
+   */
+  readonly getExternalStorageRoot: () => string;
+  /**
    * Android-only: copy a SAF file into the app cache so RN preview can load
    * it via file:// URI. Returns the cache path or "" on failure. iOS doesn't
    * need this — once scope is held the path is already a real POSIX file.
