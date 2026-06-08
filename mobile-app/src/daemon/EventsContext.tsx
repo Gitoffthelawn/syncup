@@ -59,12 +59,28 @@ export function EventsProvider({ children }: { children: React.ReactNode }) {
 
     const abort = new AbortController();
     let cancelled = false;
-    let since = 0;
     const baseUrl = `http://${info.guiAddress}`;
 
-    const loop = async () => {
+    const dispatch = (events: SyncthingEvent[]) => {
+      // snapshot so a callback can unsubscribe itself mid-iteration
+      const snapshot = Array.from(subscribersRef.current);
+      for (const event of events) {
+        for (const sub of snapshot) {
+          if (sub.types.has(event.type)) {
+            try {
+              sub.callback(event);
+            } catch {
+              // one bad subscriber shouldn't kill the loop
+            }
+          }
+        }
+      }
+    };
+
+    const poll = async (path: string, isDisk: boolean) => {
+      let since = 0;
       while (!cancelled) {
-        const url = `${baseUrl}/rest/events?since=${since}&timeout=60`;
+        const url = `${baseUrl}${path}?since=${since}&timeout=60`;
         try {
           const res = await fetch(url, {
             headers: { 'X-API-Key': info.apiKey },
@@ -75,35 +91,23 @@ export function EventsProvider({ children }: { children: React.ReactNode }) {
           }
           const events = (await res.json()) as SyncthingEvent[];
           if (cancelled) return;
-          if (!connected) setConnected(true);
+          if (!isDisk && !connected) setConnected(true);
           if (events.length > 0) {
-            const latest = events[events.length - 1].id;
-            since = latest;
-            setLastEventId(latest);
-            // snapshot so a callback can unsubscribe itself mid-iteration
-            const snapshot = Array.from(subscribersRef.current);
-            for (const event of events) {
-              for (const sub of snapshot) {
-                if (sub.types.has(event.type)) {
-                  try {
-                    sub.callback(event);
-                  } catch {
-                    // one bad subscriber shouldn't kill the loop
-                  }
-                }
-              }
-            }
+            since = events[events.length - 1].id;
+            if (!isDisk) setLastEventId(since);
+            dispatch(events);
           }
         } catch (e) {
           if (cancelled) return;
           if (e instanceof Error && e.name === 'AbortError') return;
-          setConnected(false);
+          if (!isDisk) setConnected(false);
           await new Promise(resolve => setTimeout(resolve, 2000));
         }
       }
     };
 
-    loop();
+    poll('/rest/events', false);
+    poll('/rest/events/disk', true);
 
     return () => {
       cancelled = true;

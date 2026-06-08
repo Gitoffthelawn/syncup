@@ -24,7 +24,7 @@ interface Props {
 interface TransferItem {
   folder: FolderConfig;
   file: NeedFile;
-  phase: 'downloading' | 'queued' | 'pending';
+  phase: 'downloading' | 'queued' | 'pending' | 'uploading';
 }
 
 export function TransfersModal({ visible, onClose }: Props) {
@@ -38,7 +38,11 @@ export function TransfersModal({ visible, onClose }: Props) {
       if (isRefresh) setRefreshing(true);
       else setLoading(true);
       try {
-        const folders = await client.folders();
+        const [folders, conns] = await Promise.all([
+          client.folders(),
+          client.connections().catch(() => null),
+        ]);
+        const connected = conns?.connections ?? {};
         const allItems: TransferItem[] = [];
         await Promise.all(
           folders.map(async folder => {
@@ -56,6 +60,22 @@ export function TransfersModal({ visible, onClose }: Props) {
             } catch {
               // folder may be paused
             }
+            // Outgoing: files connected peers still need from us. db/need only
+            // covers what *we* need, so without this the view reads "all synced"
+            // whenever this device is the source of a transfer.
+            await Promise.all(
+              (folder.devices ?? []).map(async d => {
+                if (!connected[d.deviceID]?.connected) return;
+                try {
+                  const remote = await client.dbRemoteNeed(folder.id, d.deviceID, 1, 50);
+                  for (const f of (remote.files ?? []).slice(0, 20)) {
+                    allItems.push({ folder, file: f, phase: 'uploading' });
+                  }
+                } catch {
+                  // peer disconnected mid-poll, or folder not shared with it
+                }
+              }),
+            );
           }),
         );
         setItems(allItems);
@@ -77,6 +97,7 @@ export function TransfersModal({ visible, onClose }: Props) {
   }, [visible, load]);
 
   const downloading = items.filter(i => i.phase === 'downloading');
+  const uploading = items.filter(i => i.phase === 'uploading');
   const queued = items.filter(i => i.phase === 'queued');
   const pending = items.filter(i => i.phase === 'pending');
   const totalNeeded = items.reduce((s, i) => s + (i.file.size ?? 0), 0);
@@ -105,7 +126,7 @@ export function TransfersModal({ visible, onClose }: Props) {
           <View style={styles.center}>
             <Text style={styles.emptyIcon}>✓</Text>
             <Text style={styles.emptyTitle}>All synced</Text>
-            <Text style={styles.emptyHint}>No files are waiting to download.</Text>
+            <Text style={styles.emptyHint}>No files are transferring right now.</Text>
           </View>
         ) : (
           <FlatList
@@ -114,6 +135,10 @@ export function TransfersModal({ visible, onClose }: Props) {
                 ? [{ type: 'header' as const, label: `Downloading (${downloading.length})` }]
                 : []),
               ...downloading.map(i => ({ type: 'item' as const, item: i })),
+              ...(uploading.length > 0
+                ? [{ type: 'header' as const, label: `Uploading (${uploading.length})` }]
+                : []),
+              ...uploading.map(i => ({ type: 'item' as const, item: i })),
               ...(queued.length > 0
                 ? [{ type: 'header' as const, label: `Queued (${queued.length})` }]
                 : []),
@@ -162,7 +187,13 @@ export function TransfersModal({ visible, onClose }: Props) {
                   </View>
                   <View style={[styles.phaseBadge, phaseStyle(phase)]}>
                     <Text style={[styles.phaseText, phaseTextStyle(phase)]}>
-                      {phase === 'downloading' ? '↓' : phase === 'queued' ? '⏳' : '○'}
+                      {phase === 'downloading'
+                        ? '↓'
+                        : phase === 'uploading'
+                          ? '↑'
+                          : phase === 'queued'
+                            ? '⏳'
+                            : '○'}
                     </Text>
                   </View>
                 </View>
@@ -179,6 +210,8 @@ function phaseStyle(phase: string) {
   switch (phase) {
     case 'downloading':
       return { backgroundColor: '#1a3a2a', borderColor: '#2a7a4a' };
+    case 'uploading':
+      return { backgroundColor: '#16263f', borderColor: '#2a557a' };
     case 'queued':
       return { backgroundColor: '#3a3020', borderColor: '#7a6830' };
     default:
@@ -190,6 +223,8 @@ function phaseTextStyle(phase: string) {
   switch (phase) {
     case 'downloading':
       return { color: '#4ade80' };
+    case 'uploading':
+      return { color: '#60a5fa' };
     case 'queued':
       return { color: '#e5a94b' };
     default:

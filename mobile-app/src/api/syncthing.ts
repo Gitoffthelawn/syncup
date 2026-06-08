@@ -294,6 +294,16 @@ export class SyncthingClient {
     }>(`/rest/db/need?folder=${encodeURIComponent(folderId)}&page=${page}&perpage=${perpage}`);
   }
 
+  async dbRemoteNeed(folderId: string, deviceId: string, page = 1, perpage = 100) {
+    return this.request<{
+      files: NeedFile[];
+      page: number;
+      perpage: number;
+    }>(
+      `/rest/db/remoteneed?folder=${encodeURIComponent(folderId)}&device=${encodeURIComponent(deviceId)}&page=${page}&perpage=${perpage}`,
+    );
+  }
+
   systemDiscovery() {
     return this.request<Record<string, { addresses: string[] }>>('/rest/system/discovery');
   }

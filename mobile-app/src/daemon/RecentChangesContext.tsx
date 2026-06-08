@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useEvents } from './EventsContext';
 
-// ring buffer of ItemFinished events; subscribed at app root so we don't miss
+// ring buffer of recent file changes; subscribed at app root so we don't miss
 // changes that happen while another screen is mounted. cap at 100.
 
 export interface RecentChange {
@@ -12,6 +12,13 @@ export interface RecentChange {
   type: string; // file | dir | symlink
   action: string; // update | delete | metadata
   error: string | null;
+}
+
+interface DiskChangeData {
+  folder?: string;
+  path?: string;
+  type?: string;
+  action?: string; // modified | deleted
 }
 
 interface ItemFinishedData {
@@ -30,29 +37,57 @@ interface RecentChangesContextValue {
 const Ctx = createContext<RecentChangesContextValue | null>(null);
 const MAX_ENTRIES = 100;
 
+// disk events report "modified"/"deleted"; normalize to the update/delete
+// vocabulary the rest of the UI (icons, labels) already speaks.
+function normalizeAction(action: string | undefined): string {
+  if (action === 'deleted' || action === 'delete') return 'delete';
+  if (action === 'metadata') return 'metadata';
+  return 'update';
+}
+
 export function RecentChangesProvider({ children }: { children: React.ReactNode }) {
   const { subscribe } = useEvents();
   const [changes, setChanges] = useState<RecentChange[]>([]);
 
-  useEffect(() => {
-    const unsubscribe = subscribe(['ItemFinished'], evt => {
-      const d = (evt.data ?? {}) as ItemFinishedData;
-      if (!d.folder || !d.item) return;
-      const next: RecentChange = {
-        id: evt.id,
-        time: evt.time,
-        folder: d.folder,
-        item: d.item,
-        type: d.type ?? 'file',
-        action: d.action ?? 'update',
-        error: d.error ? String(d.error) : null,
-      };
-      setChanges(prev => {
-        const out = [next, ...prev];
-        if (out.length > MAX_ENTRIES) out.length = MAX_ENTRIES;
-        return out;
-      });
+  const push = (next: RecentChange) =>
+    setChanges(prev => {
+      const out = [next, ...prev];
+      if (out.length > MAX_ENTRIES) out.length = MAX_ENTRIES;
+      return out;
     });
+
+  useEffect(() => {
+    const unsubscribe = subscribe(
+      ['LocalChangeDetected', 'RemoteChangeDetected', 'ItemFinished'],
+      evt => {
+        if (evt.type === 'ItemFinished') {
+          const d = (evt.data ?? {}) as ItemFinishedData;
+          if (!d.folder || !d.item || !d.error) return;
+          push({
+            id: evt.id,
+            time: evt.time,
+            folder: d.folder,
+            item: d.item,
+            type: d.type ?? 'file',
+            action: normalizeAction(d.action),
+            error: String(d.error),
+          });
+          return;
+        }
+
+        const d = (evt.data ?? {}) as DiskChangeData;
+        if (!d.folder || !d.path) return;
+        push({
+          id: evt.id,
+          time: evt.time,
+          folder: d.folder,
+          item: d.path,
+          type: d.type ?? 'file',
+          action: normalizeAction(d.action),
+          error: null,
+        });
+      },
+    );
     return unsubscribe;
   }, [subscribe]);
 

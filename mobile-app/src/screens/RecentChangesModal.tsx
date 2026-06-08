@@ -112,7 +112,7 @@ export function RecentChangesModal({ visible, onClose }: Props) {
                 {changes.map(c => {
                   const label = folderLabels[c.folder] || c.folder;
                   return (
-                    <View key={c.id} style={styles.row}>
+                    <View key={`${c.id}:${c.folder}:${c.item}`} style={styles.row}>
                       <Text style={[styles.rowIcon, c.error && styles.rowIconError]}>
                         {iconFor(c.action, !!c.error)}
                       </Text>
