@@ -115,7 +115,11 @@ class SyncthingService : Service() {
         super.onCreate()
         Log.i(TAG, "onCreate")
         createNotificationChannel()
-        promoteToForeground()
+        if (!promoteToForeground()) {
+            Log.w(TAG, "promoteToForeground failed; stopping service")
+            stopSelf()
+            return
+        }
         acquireMulticastLock()
         startDaemon()
         registerNetworkCallback()
@@ -352,23 +356,23 @@ class SyncthingService : Service() {
 
     private fun buildNotification(): Notification = buildNotificationStandalone(this)
 
-    private fun promoteToForeground() {
+    // Returns true once the service is running in the foreground.
+    private fun promoteToForeground(): Boolean {
         val notification = buildNotification()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            // dataSync alone is rejected from BOOT_COMPLETED on Android 14+
-            // (per-type allowlist for background broadcast contexts). OR'ing
-            // specialUse satisfies the boot path while preserving dataSync's
-            // semantics for foreground / share / activity launches. Manifest
-            // declares both types and the required PROPERTY_SPECIAL_USE_*
-            // subtype.
-            startForeground(
-                NOTIFICATION_ID,
-                notification,
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC or
+        return try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                startForeground(
+                    NOTIFICATION_ID,
+                    notification,
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE,
-            )
-        } else {
-            startForeground(NOTIFICATION_ID, notification)
+                )
+            } else {
+                startForeground(NOTIFICATION_ID, notification)
+            }
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "startForeground failed", e)
+            false
         }
     }
 }
