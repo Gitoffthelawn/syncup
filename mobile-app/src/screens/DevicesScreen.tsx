@@ -6,9 +6,9 @@ import {
   StyleSheet,
   Switch,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
+import { Focusable } from '../components/Focusable';
 import { useSyncthing, useSyncthingClient } from '../daemon/SyncthingContext';
 import { useResource } from '../daemon/useResource';
 import { useEventTrigger } from '../daemon/EventsContext';
@@ -83,14 +83,14 @@ export function DevicesScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.textDim} />}
       >
         {info && (
-          <TouchableOpacity style={styles.qrButton} onPress={() => setShowQR(true)}>
+          <Focusable style={styles.qrButton} onPress={() => setShowQR(true)}>
             <Text style={styles.qrButtonIcon}>▦</Text>
             <View style={{ flex: 1 }}>
               <Text style={styles.qrButtonText}>Show this device's QR</Text>
               <Text style={styles.qrButtonHint}>Let a peer scan to pair</Text>
             </View>
             <Text style={styles.qrButtonArrow}>›</Text>
-          </TouchableOpacity>
+          </Focusable>
         )}
 
         {error && <ErrorBox message={error} />}
@@ -215,12 +215,12 @@ function PendingDeviceCard({
         />
       </View>
       <View style={styles.offerActions}>
-        <TouchableOpacity style={[styles.offerBtn, styles.ignoreBtn]} onPress={ignore} disabled={busy}>
+        <Focusable style={[styles.offerBtn, styles.ignoreBtn]} onPress={ignore} disabled={busy}>
           <Text style={styles.ignoreBtnText}>Ignore</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.offerBtn, styles.acceptBtn]} onPress={accept} disabled={busy}>
+        </Focusable>
+        <Focusable style={[styles.offerBtn, styles.acceptBtn]} onPress={accept} disabled={busy}>
           <Text style={styles.acceptBtnText}>Accept</Text>
-        </TouchableOpacity>
+        </Focusable>
       </View>
     </View>
   );
@@ -245,7 +245,7 @@ function DeviceCard({ device, onPress }: { device: DeviceView; onPress: () => vo
         : 'disconnected';
 
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
+    <Focusable onPress={onPress} activeOpacity={0.7}>
       <Card>
         <View style={styles.header}>
           <View style={styles.headerMain}>
@@ -273,7 +273,7 @@ function DeviceCard({ device, onPress }: { device: DeviceView; onPress: () => vo
           </Text>
         </View>
       </Card>
-    </TouchableOpacity>
+    </Focusable>
   );
 }
 

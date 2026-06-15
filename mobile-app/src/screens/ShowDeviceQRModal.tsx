@@ -4,9 +4,9 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
+import { Focusable } from '../components/Focusable';
 import QRCode from 'react-native-qrcode-svg';
 import { colors } from '../components/ui';
 
@@ -24,9 +24,9 @@ export function ShowDeviceQRModal({ visible, deviceId, deviceName, onClose }: Pr
         <Pressable style={styles.sheet} onPress={e => e.stopPropagation()}>
           <View style={styles.header}>
             <Text style={styles.title}>This device</Text>
-            <TouchableOpacity onPress={onClose}>
+            <Focusable onPress={onClose}>
               <Text style={styles.close}>Done</Text>
-            </TouchableOpacity>
+            </Focusable>
           </View>
 
           <View style={styles.body}>

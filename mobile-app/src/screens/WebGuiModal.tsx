@@ -5,9 +5,9 @@ import {
   Modal,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
+import { Focusable } from '../components/Focusable';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import type { WebViewNavigation } from 'react-native-webview';
@@ -48,13 +48,13 @@ export function WebGuiModal({ visible, url, onClose }: Props) {
     >
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} hitSlop={8}>
+          <Focusable onPress={onClose} hitSlop={8}>
             <Text style={styles.action}>Done</Text>
-          </TouchableOpacity>
+          </Focusable>
           <Text style={styles.title} numberOfLines={1}>
             Web GUI
           </Text>
-          <TouchableOpacity
+          <Focusable
             onPress={() => {
               setError(null);
               webRef.current?.reload();
@@ -62,7 +62,7 @@ export function WebGuiModal({ visible, url, onClose }: Props) {
             hitSlop={8}
           >
             <Text style={styles.action}>Reload</Text>
-          </TouchableOpacity>
+          </Focusable>
         </View>
 
         {error ? (

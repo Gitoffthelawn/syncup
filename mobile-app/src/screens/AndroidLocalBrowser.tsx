@@ -9,9 +9,9 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
+import { Focusable } from '../components/Focusable';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import GoBridge from '../GoServerBridgeJSI';
 import { colors } from '../components/ui';
@@ -162,20 +162,20 @@ export function AndroidLocalBrowser({ visible, onCancel, onPick }: Props) {
         <StatusBar barStyle="light-content" backgroundColor={colors.bg} />
 
         <View style={styles.appBar}>
-          <TouchableOpacity onPress={onCancel} style={styles.appBarBtn} hitSlop={10}>
+          <Focusable onPress={onCancel} style={styles.appBarBtn} hitSlop={10}>
             <Text style={styles.appBarBtnText}>✕</Text>
-          </TouchableOpacity>
+          </Focusable>
           <Text style={styles.appBarTitle} numberOfLines={1}>
             {currentLabel}
           </Text>
-          <TouchableOpacity
+          <Focusable
             onPress={() => setCreating(true)}
             style={styles.appBarBtn}
             hitSlop={10}
             disabled={creating}
           >
             <Icon name="add" size={22} color={creating ? colors.textDim : colors.text} />
-          </TouchableOpacity>
+          </Focusable>
         </View>
 
         {crumbs.length > 1 && (
@@ -221,10 +221,10 @@ export function AndroidLocalBrowser({ visible, onCancel, onPick }: Props) {
               autoCorrect={false}
               autoCapitalize="none"
             />
-            <TouchableOpacity onPress={createFolder} style={styles.createBtn}>
+            <Focusable onPress={createFolder} style={styles.createBtn}>
               <Text style={styles.createBtnText}>Create</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
+            </Focusable>
+            <Focusable
               onPress={() => {
                 setCreating(false);
                 setNewName('');
@@ -233,7 +233,7 @@ export function AndroidLocalBrowser({ visible, onCancel, onPick }: Props) {
               hitSlop={6}
             >
               <Text style={styles.createCancelText}>✕</Text>
-            </TouchableOpacity>
+            </Focusable>
           </View>
         )}
 
@@ -250,21 +250,21 @@ export function AndroidLocalBrowser({ visible, onCancel, onPick }: Props) {
               <Text style={styles.empty}>This folder has no subfolders.</Text>
             }
             renderItem={({ item }) => (
-              <TouchableOpacity style={styles.row} onPress={() => openSubdir(item.name)}>
+              <Focusable style={styles.row} onPress={() => openSubdir(item.name)}>
                 <View style={styles.rowIcon}>
                   <Icon name="folder" size={22} color={colors.accent} />
                 </View>
                 <Text style={styles.rowName} numberOfLines={1}>{item.name}</Text>
                 <Text style={styles.rowArrow}>›</Text>
-              </TouchableOpacity>
+              </Focusable>
             )}
           />
         )}
 
         <View style={styles.footer}>
-          <TouchableOpacity style={styles.useBtn} onPress={() => onPick(path)}>
+          <Focusable style={styles.useBtn} onPress={() => onPick(path)}>
             <Text style={styles.useBtnText}>USE THIS FOLDER</Text>
-          </TouchableOpacity>
+          </Focusable>
         </View>
       </SafeAreaView>
     </Modal>

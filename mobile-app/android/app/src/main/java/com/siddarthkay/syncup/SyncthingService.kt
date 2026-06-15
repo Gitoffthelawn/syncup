@@ -89,7 +89,7 @@ class SyncthingService : Service() {
                 "Syncing in background"
             }
             return NotificationCompat.Builder(ctx, CHANNEL_ID)
-                .setContentTitle("Syncthing")
+                .setContentTitle("SyncUp")
                 .setContentText(text)
                 .setSmallIcon(android.R.drawable.stat_notify_sync)
                 .setOngoing(true)
@@ -338,10 +338,10 @@ class SyncthingService : Service() {
         if (nm.getNotificationChannel(CHANNEL_ID) != null) return
         val channel = NotificationChannel(
             CHANNEL_ID,
-            "Syncthing",
+            "SyncUp",
             NotificationManager.IMPORTANCE_LOW,
         ).apply {
-            description = "Persistent notification while syncthing is running"
+            description = "Persistent notification while SyncUp is running"
             setShowBadge(false)
             setSound(null, null)
             enableLights(false)

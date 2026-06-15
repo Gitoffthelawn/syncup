@@ -12,9 +12,9 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
+import { Focusable } from '../components/Focusable';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Haptics from 'expo-haptics';
@@ -535,11 +535,11 @@ export function FolderBrowser({ folder, isSelective, onBack }: Props) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={goUp} hitSlop={8}>
+        <Focusable onPress={goUp} hitSlop={8}>
           <Text style={styles.back}>
             {selectMode ? 'Cancel' : filterOpen ? 'Close' : `‹ ${path ? 'Up' : 'Back'}`}
           </Text>
-        </TouchableOpacity>
+        </Focusable>
         <Text style={styles.title} numberOfLines={1}>
           {selectMode
             ? `${selected.size} selected`
@@ -547,27 +547,27 @@ export function FolderBrowser({ folder, isSelective, onBack }: Props) {
         </Text>
         <View style={styles.headerRight}>
           {selectMode ? (
-            <TouchableOpacity onPress={selectAll} hitSlop={8}>
+            <Focusable onPress={selectAll} hitSlop={8}>
               <Text style={styles.headerAction}>
                 {selected.size === visibleEntries.length ? 'None' : 'All'}
               </Text>
-            </TouchableOpacity>
+            </Focusable>
           ) : (
             <>
-              <TouchableOpacity
+              <Focusable
                 onPress={() => setFilterOpen(v => !v)}
                 hitSlop={8}
                 style={styles.headerIcon}
               >
                 {filterOpen ? <Text style={styles.headerIconText}>✕</Text> : <Icon name="search" size={16} />}
-              </TouchableOpacity>
-              <TouchableOpacity
+              </Focusable>
+              <Focusable
                 onPress={() => setSortMenuOpen(true)}
                 hitSlop={8}
                 style={styles.headerIcon}
               >
                 <Icon name="swap-vertical" size={16} />
-              </TouchableOpacity>
+              </Focusable>
             </>
           )}
         </View>
@@ -596,20 +596,20 @@ export function FolderBrowser({ folder, isSelective, onBack }: Props) {
       )}
 
       <View style={styles.pathBar}>
-        <TouchableOpacity onPress={() => jumpTo('')}>
+        <Focusable onPress={() => jumpTo('')}>
           <Text style={[styles.crumb, !path && styles.crumbCurrent]}>/</Text>
-        </TouchableOpacity>
+        </Focusable>
         {breadcrumb.map((c, i) => (
           <View key={c.path} style={styles.crumbRow}>
             <Text style={styles.crumbSep}>/</Text>
-            <TouchableOpacity onPress={() => jumpTo(c.path)}>
+            <Focusable onPress={() => jumpTo(c.path)}>
               <Text
                 style={[styles.crumb, i === breadcrumb.length - 1 && styles.crumbCurrent]}
                 numberOfLines={1}
               >
                 {c.label}
               </Text>
-            </TouchableOpacity>
+            </Focusable>
           </View>
         ))}
       </View>
@@ -626,14 +626,14 @@ export function FolderBrowser({ folder, isSelective, onBack }: Props) {
             autoCapitalize="none"
             autoFocus
           />
-          <TouchableOpacity
+          <Focusable
             onPress={() => setRecentOnly(r => !r)}
             style={[styles.chip, recentOnly && styles.chipOn]}
           >
             <Text style={[styles.chipText, recentOnly && styles.chipTextOn]}>
               24h
             </Text>
-          </TouchableOpacity>
+          </Focusable>
         </View>
       )}
 
@@ -644,9 +644,9 @@ export function FolderBrowser({ folder, isSelective, onBack }: Props) {
       ) : error ? (
         <View style={styles.emptyWrap}>
           <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retry} onPress={() => load(path)}>
+          <Focusable style={styles.retry} onPress={() => load(path)}>
             <Text style={styles.retryText}>Retry</Text>
-          </TouchableOpacity>
+          </Focusable>
         </View>
       ) : visibleEntries.length === 0 ? (
         <View style={styles.emptyWrap}>
@@ -681,7 +681,7 @@ export function FolderBrowser({ folder, isSelective, onBack }: Props) {
             const showThumb = !dir && kind === 'image' && state === 'synced';
             const isSelected = selectMode && selected.has(item.name);
             return (
-              <TouchableOpacity
+              <Focusable
                 style={[styles.row, isSelected && styles.rowSelected]}
                 onPress={() => goInto(item)}
                 onLongPress={() => (selectMode ? null : startSelect(item))}
@@ -717,7 +717,7 @@ export function FolderBrowser({ folder, isSelective, onBack }: Props) {
                 </View>
                 <View style={styles.rowRight}>
                   {isSelective && !selectMode && (
-                    <TouchableOpacity
+                    <Focusable
                       onPress={() => togglePin(item)}
                       hitSlop={10}
                       style={styles.pinBtn}
@@ -725,21 +725,21 @@ export function FolderBrowser({ folder, isSelective, onBack }: Props) {
                       {isPathSelected(ignoreLines, joinPath(path, item.name))
                         ? <Icon name="pin" size={16} color={colors.accent} />
                         : <Icon name="pin-outline" size={16} color={colors.textDim} />}
-                    </TouchableOpacity>
+                    </Focusable>
                   )}
                   {!dir && <StateDot state={state} />}
                   {!selectMode && !dir && (
-                    <TouchableOpacity
+                    <Focusable
                       onPress={() => showRowActions(item)}
                       hitSlop={10}
                       style={styles.moreBtn}
                     >
                       <Icon name="ellipsis-horizontal" size={20} color={colors.textDim} />
-                    </TouchableOpacity>
+                    </Focusable>
                   )}
                   {dir && !selectMode && <Text style={styles.rowArrow}>›</Text>}
                 </View>
-              </TouchableOpacity>
+              </Focusable>
             );
           }}
         />
@@ -747,21 +747,21 @@ export function FolderBrowser({ folder, isSelective, onBack }: Props) {
 
       {selectMode && selected.size > 0 && (
         <View style={styles.batchBar}>
-          <TouchableOpacity style={styles.batchBtn} onPress={batchShare}>
+          <Focusable style={styles.batchBtn} onPress={batchShare}>
             <Text style={styles.batchBtnText}>Share</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.batchBtn} onPress={exportZip}>
+          </Focusable>
+          <Focusable style={styles.batchBtn} onPress={exportZip}>
             <Text style={styles.batchBtnText}>Zip</Text>
-          </TouchableOpacity>
+          </Focusable>
           {!readOnly && (
-            <TouchableOpacity
+            <Focusable
               style={[styles.batchBtn, styles.batchBtnDestructive]}
               onPress={() => confirmDelete(Array.from(selected))}
             >
               <Text style={[styles.batchBtnText, styles.batchBtnTextDestructive]}>
                 Delete
               </Text>
-            </TouchableOpacity>
+            </Focusable>
           )}
         </View>
       )}
@@ -772,7 +772,7 @@ export function FolderBrowser({ folder, isSelective, onBack }: Props) {
         animationType="fade"
         onRequestClose={() => setSortMenuOpen(false)}
       >
-        <TouchableOpacity
+        <Focusable
           style={styles.sheetBackdrop}
           activeOpacity={1}
           onPress={() => setSortMenuOpen(false)}
@@ -798,7 +798,7 @@ export function FolderBrowser({ folder, isSelective, onBack }: Props) {
               onPress={() => { toggleSort('modified'); setSortMenuOpen(false); }}
             />
           </View>
-        </TouchableOpacity>
+        </Focusable>
       </Modal>
 
       {actionSheet && (
@@ -808,7 +808,7 @@ export function FolderBrowser({ folder, isSelective, onBack }: Props) {
           animationType="fade"
           onRequestClose={() => setActionSheet(null)}
         >
-          <TouchableOpacity
+          <Focusable
             style={styles.sheetBackdrop}
             activeOpacity={1}
             onPress={() => setActionSheet(null)}
@@ -819,7 +819,7 @@ export function FolderBrowser({ folder, isSelective, onBack }: Props) {
                 const isCancel = i === actionSheet.options.length - 1;
                 const isDestructive = opt === 'Delete';
                 return (
-                  <TouchableOpacity
+                  <Focusable
                     key={opt}
                     style={styles.sheetRow}
                     onPress={() => {
@@ -837,11 +837,11 @@ export function FolderBrowser({ folder, isSelective, onBack }: Props) {
                     >
                       {opt}
                     </Text>
-                  </TouchableOpacity>
+                  </Focusable>
                 );
               })}
             </View>
-          </TouchableOpacity>
+          </Focusable>
         </Modal>
       )}
 
@@ -864,13 +864,13 @@ export function FolderBrowser({ folder, isSelective, onBack }: Props) {
                 autoCapitalize="none"
               />
               <View style={styles.renameActions}>
-                <TouchableOpacity
+                <Focusable
                   style={styles.renameBtn}
                   onPress={() => setRenameTarget(null)}
                 >
                   <Text style={styles.renameBtnText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
+                </Focusable>
+                <Focusable
                   style={[styles.renameBtn, styles.renameBtnPrimary]}
                   onPress={() => {
                     const target = renameTarget;
@@ -881,7 +881,7 @@ export function FolderBrowser({ folder, isSelective, onBack }: Props) {
                   <Text style={[styles.renameBtnText, styles.renameBtnTextPrimary]}>
                     Rename
                   </Text>
-                </TouchableOpacity>
+                </Focusable>
               </View>
             </View>
           </View>
@@ -929,11 +929,11 @@ function SortOption({
   onPress: () => void;
 }) {
   return (
-    <TouchableOpacity style={styles.sheetRow} onPress={onPress}>
+    <Focusable style={styles.sheetRow} onPress={onPress}>
       <Text style={[styles.sheetRowText, active && styles.sheetRowActive]}>
         {label}{active ? (dir === 'asc' ? '  ↑' : '  ↓') : ''}
       </Text>
-    </TouchableOpacity>
+    </Focusable>
   );
 }
 

@@ -9,10 +9,10 @@ import {
   Share,
   StyleSheet,
   Text,
-  TouchableOpacity,
   useWindowDimensions,
   View,
 } from 'react-native';
+import { Focusable } from '../components/Focusable';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
@@ -58,16 +58,16 @@ export function FilePreviewModal({
     >
       <View style={styles.container}>
         <View style={[styles.header, { paddingTop: Math.max(insets.top, 12) + 8 }]}>
-          <TouchableOpacity onPress={onClose} hitSlop={10}>
+          <Focusable onPress={onClose} hitSlop={10}>
             <Text style={styles.headerClose}>✕</Text>
-          </TouchableOpacity>
+          </Focusable>
           <Text style={styles.headerTitle} numberOfLines={1}>{name}</Text>
-          <TouchableOpacity
+          <Focusable
             onPress={() => shareFile(fileUri ?? '', name)}
             hitSlop={10}
           >
             <Text style={styles.headerAction}>Share</Text>
-          </TouchableOpacity>
+          </Focusable>
         </View>
 
         <View style={styles.content}>

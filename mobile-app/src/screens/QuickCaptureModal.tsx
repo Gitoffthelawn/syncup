@@ -4,9 +4,9 @@ import {
   Modal,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
+import { Focusable } from '../components/Focusable';
 import { CameraView, useCameraPermissions } from '../components/CameraCapture';
 import * as Haptics from 'expo-haptics';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -111,12 +111,12 @@ export function QuickCaptureModal({ visible, folders, onClose, onCaptured }: Pro
         <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
           <View style={styles.permissionWrap}>
             <Text style={styles.permissionText}>Camera access is needed to take photos.</Text>
-            <TouchableOpacity style={styles.permissionBtn} onPress={requestPermission}>
+            <Focusable style={styles.permissionBtn} onPress={requestPermission}>
               <Text style={styles.permissionBtnText}>Grant access</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={onClose}>
+            </Focusable>
+            <Focusable onPress={onClose}>
               <Text style={styles.cancelText}>Cancel</Text>
-            </TouchableOpacity>
+            </Focusable>
           </View>
         </SafeAreaView>
       </Modal>
@@ -131,9 +131,9 @@ export function QuickCaptureModal({ visible, folders, onClose, onCaptured }: Pro
             <Text style={styles.permissionText}>
               Add a folder first, then come back here to capture photos straight into it.
             </Text>
-            <TouchableOpacity style={styles.permissionBtn} onPress={onClose}>
+            <Focusable style={styles.permissionBtn} onPress={onClose}>
               <Text style={styles.permissionBtnText}>Got it</Text>
-            </TouchableOpacity>
+            </Focusable>
           </View>
         </SafeAreaView>
       </Modal>
@@ -151,31 +151,31 @@ export function QuickCaptureModal({ visible, folders, onClose, onCaptured }: Pro
 
         <View style={styles.overlay} pointerEvents="box-none">
           <View style={[styles.topBar, { paddingTop: 12 + insets.top }]}>
-            <TouchableOpacity onPress={onClose}>
+            <Focusable onPress={onClose}>
               <Text style={styles.closeBtn}>✕</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setShowFolderPicker(true)}>
+            </Focusable>
+            <Focusable onPress={() => setShowFolderPicker(true)}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Icon name="folder" size={16} color="#fff" />
                 <Text style={styles.folderLabel} numberOfLines={1}>
                   {selectedFolder?.label || selectedFolder?.id || 'Select folder'}
                 </Text>
               </View>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setFacing(f => f === 'back' ? 'front' : 'back')}>
+            </Focusable>
+            <Focusable onPress={() => setFacing(f => f === 'back' ? 'front' : 'back')}>
               <Icon name="camera-reverse" size={22} color="#fff" />
-            </TouchableOpacity>
+            </Focusable>
           </View>
 
           <View style={[styles.bottomBar, { paddingBottom: 20 + insets.bottom }]}>
             <View style={styles.shutterWrap}>
-              <TouchableOpacity
+              <Focusable
                 style={[styles.shutter, capturing && styles.shutterActive]}
                 onPress={capture}
                 disabled={capturing || !selectedFolder}
               >
                 <View style={styles.shutterInner} />
-              </TouchableOpacity>
+              </Focusable>
             </View>
           </View>
         </View>
@@ -185,7 +185,7 @@ export function QuickCaptureModal({ visible, folders, onClose, onCaptured }: Pro
             <SafeAreaView style={styles.pickerSheet} edges={['bottom']}>
               <Text style={styles.pickerTitle}>Save to folder</Text>
               {folders.map(f => (
-                <TouchableOpacity
+                <Focusable
                   key={f.id}
                   style={[
                     styles.pickerRow,
@@ -202,14 +202,14 @@ export function QuickCaptureModal({ visible, folders, onClose, onCaptured }: Pro
                   {selectedFolder?.id === f.id && (
                     <Text style={styles.pickerCheck}>✓</Text>
                   )}
-                </TouchableOpacity>
+                </Focusable>
               ))}
-              <TouchableOpacity
+              <Focusable
                 style={styles.pickerCancel}
                 onPress={() => setShowFolderPicker(false)}
               >
                 <Text style={styles.pickerCancelText}>Cancel</Text>
-              </TouchableOpacity>
+              </Focusable>
             </SafeAreaView>
           </View>
         )}

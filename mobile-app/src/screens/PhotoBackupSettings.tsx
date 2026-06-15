@@ -6,9 +6,9 @@ import {
   StyleSheet,
   Switch,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
+import { Focusable } from '../components/Focusable';
 import { useSyncthingClient } from '../daemon/SyncthingContext';
 import type { FolderConfig } from '../api/types';
 import { colors } from '../components/ui';
@@ -176,7 +176,7 @@ export function PhotoBackupSettings({ onBack }: Props) {
               {folders.map(f => {
                 const active = config.folderId === f.id;
                 return (
-                  <TouchableOpacity
+                  <Focusable
                     key={f.id}
                     style={[styles.optionRow, active && styles.optionRowActive]}
                     onPress={() =>
@@ -191,7 +191,7 @@ export function PhotoBackupSettings({ onBack }: Props) {
                       {f.label || f.id}
                     </Text>
                     {active && <Text style={styles.check}>✓</Text>}
-                  </TouchableOpacity>
+                  </Focusable>
                 );
               })}
             </View>
@@ -201,7 +201,7 @@ export function PhotoBackupSettings({ onBack }: Props) {
               {STRUCTURES.map(s => {
                 const active = config.structure === s.value;
                 return (
-                  <TouchableOpacity
+                  <Focusable
                     key={s.value}
                     style={[styles.optionRow, active && styles.optionRowActive]}
                     onPress={() => updateConfig({ structure: s.value })}
@@ -213,7 +213,7 @@ export function PhotoBackupSettings({ onBack }: Props) {
                       <Text style={styles.optionExample}>{s.example}</Text>
                     </View>
                     {active && <Text style={styles.check}>✓</Text>}
-                  </TouchableOpacity>
+                  </Focusable>
                 );
               })}
             </View>
@@ -223,7 +223,7 @@ export function PhotoBackupSettings({ onBack }: Props) {
               {FILTERS.map(f => {
                 const active = config.mediaFilter === f.value;
                 return (
-                  <TouchableOpacity
+                  <Focusable
                     key={f.value}
                     style={[styles.optionRow, active && styles.optionRowActive]}
                     onPress={() => updateConfig({ mediaFilter: f.value })}
@@ -232,7 +232,7 @@ export function PhotoBackupSettings({ onBack }: Props) {
                       {f.label}
                     </Text>
                     {active && <Text style={styles.check}>✓</Text>}
-                  </TouchableOpacity>
+                  </Focusable>
                 );
               })}
             </View>
@@ -283,15 +283,15 @@ export function PhotoBackupSettings({ onBack }: Props) {
 
             <View style={styles.actions}>
               {isRunning ? (
-                <TouchableOpacity style={styles.actionBtn} onPress={cancelBackup}>
+                <Focusable style={styles.actionBtn} onPress={cancelBackup}>
                   <Text style={styles.actionBtnText}>Cancel</Text>
-                </TouchableOpacity>
+                </Focusable>
               ) : (
-                <TouchableOpacity style={[styles.actionBtn, styles.actionBtnPrimary]} onPress={startBackup}>
+                <Focusable style={[styles.actionBtn, styles.actionBtnPrimary]} onPress={startBackup}>
                   <Text style={[styles.actionBtnText, styles.actionBtnTextPrimary]}>
                     Back up now
                   </Text>
-                </TouchableOpacity>
+                </Focusable>
               )}
             </View>
 
@@ -310,9 +310,9 @@ export function PhotoBackupSettings({ onBack }: Props) {
 function Header({ onBack }: { onBack: () => void }) {
   return (
     <View style={styles.header}>
-      <TouchableOpacity onPress={onBack} hitSlop={8}>
+      <Focusable onPress={onBack} hitSlop={8}>
         <Text style={styles.back}>‹ Back</Text>
-      </TouchableOpacity>
+      </Focusable>
       <Text style={styles.title}>Photo backup</Text>
       <View style={{ width: 56 }} />
     </View>

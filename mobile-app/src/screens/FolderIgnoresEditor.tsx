@@ -6,9 +6,9 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
+import { Focusable } from '../components/Focusable';
 import { useSyncthingClient } from '../daemon/SyncthingContext';
 import { colors } from '../components/ui';
 import { IGNORE_PRESETS, type IgnorePreset } from '../utils/folderPresets';
@@ -104,19 +104,19 @@ export function FolderIgnoresEditor({ folderId, folderLabel, onBack, onSaved }: 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={cancel} hitSlop={8}>
+        <Focusable onPress={cancel} hitSlop={8}>
           <Text style={styles.back}>‹ Back</Text>
-        </TouchableOpacity>
+        </Focusable>
         <Text style={styles.title} numberOfLines={1}>
           Ignore patterns
         </Text>
-        <TouchableOpacity onPress={save} disabled={!dirty || saving} hitSlop={8}>
+        <Focusable onPress={save} disabled={!dirty || saving} hitSlop={8}>
           {saving ? (
             <ActivityIndicator color={colors.accent} />
           ) : (
             <Text style={[styles.save, !dirty && styles.saveDisabled]}>Save</Text>
           )}
-        </TouchableOpacity>
+        </Focusable>
       </View>
 
       <Text style={styles.folderLabel} numberOfLines={1}>
@@ -133,26 +133,26 @@ export function FolderIgnoresEditor({ folderId, folderLabel, onBack, onSaved }: 
 
           <View style={styles.presetBar}>
             <Text style={styles.presetBarLabel}>Presets</Text>
-            <TouchableOpacity
+            <Focusable
               style={styles.presetBarBtn}
               onPress={() => setPresetMenuOpen(v => !v)}
             >
               <Text style={styles.presetBarBtnText}>
                 {presetMenuOpen ? 'Close' : 'Add preset…'}
               </Text>
-            </TouchableOpacity>
+            </Focusable>
           </View>
           {presetMenuOpen && (
             <View style={styles.presetMenu}>
               {IGNORE_PRESETS.map(p => (
-                <TouchableOpacity
+                <Focusable
                   key={p.id}
                   style={styles.presetItem}
                   onPress={() => appendPreset(p)}
                 >
                   <Text style={styles.presetItemLabel}>{p.label}</Text>
                   <Text style={styles.presetItemHint}>{p.description}</Text>
-                </TouchableOpacity>
+                </Focusable>
               ))}
             </View>
           )}

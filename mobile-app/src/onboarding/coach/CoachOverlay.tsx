@@ -5,9 +5,9 @@ import {
   Easing,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
+import { Focusable } from '../../components/Focusable';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, Mask, Rect } from 'react-native-svg';
 import { colors } from '../../components/ui';
@@ -229,19 +229,19 @@ export function CoachOverlay() {
         <Text style={styles.body}>{renderStep.body}</Text>
         <View style={styles.actions}>
           {stepIndex === 0 ? (
-            <TouchableOpacity onPress={skip} hitSlop={12}>
+            <Focusable onPress={skip} hitSlop={12}>
               <Text style={styles.skipText}>Skip tour</Text>
-            </TouchableOpacity>
+            </Focusable>
           ) : (
             <View />
           )}
-          <TouchableOpacity onPress={next} style={styles.cta} activeOpacity={0.85}>
+          <Focusable onPress={next} style={styles.cta} activeOpacity={0.85}>
             <Text style={styles.ctaText}>
               {stepIndex === 0 || stepIndex === totalSteps - 1
                 ? renderStep.cta ?? 'Next'
                 : 'Skip to next'}
             </Text>
-          </TouchableOpacity>
+          </Focusable>
         </View>
       </Animated.View>
     </View>

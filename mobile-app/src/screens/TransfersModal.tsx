@@ -6,9 +6,9 @@ import {
   RefreshControl,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
+import { Focusable } from '../components/Focusable';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSyncthingClient } from '../daemon/SyncthingContext';
 import type { FolderConfig, NeedFile } from '../api/types';
@@ -111,9 +111,9 @@ export function TransfersModal({ visible, onClose }: Props) {
     >
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={onClose}>
+          <Focusable onPress={onClose}>
             <Text style={styles.closeBtn}>Close</Text>
-          </TouchableOpacity>
+          </Focusable>
           <Text style={styles.title}>Transfers</Text>
           <View style={{ width: 50 }} />
         </View>

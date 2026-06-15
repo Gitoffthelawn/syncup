@@ -5,9 +5,9 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
+import { Focusable } from '../components/Focusable';
 import { useSyncthingClient } from '../daemon/SyncthingContext';
 import { useResource } from '../daemon/useResource';
 import { useEventTrigger } from '../daemon/EventsContext';
@@ -191,12 +191,12 @@ export function FoldersScreen() {
       </ScrollView>
 
       <Fab onPress={() => setShowAdd(true)} coachId="folders.fab" />
-      <TouchableOpacity
+      <Focusable
         style={styles.cameraFab}
         onPress={() => setShowCapture(true)}
       >
         <Icon name="camera" size={24} color={colors.text} />
-      </TouchableOpacity>
+      </Focusable>
 
       {showCapture && (
         <QuickCaptureModal
@@ -255,12 +255,12 @@ function PendingOfferCard({
         <Pill text="offered" tone="warning" />
       </View>
       <View style={styles.offerActions}>
-        <TouchableOpacity style={[styles.offerBtn, styles.ignoreBtn]} onPress={onIgnore}>
+        <Focusable style={[styles.offerBtn, styles.ignoreBtn]} onPress={onIgnore}>
           <Text style={styles.ignoreBtnText}>Ignore</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.offerBtn, styles.acceptBtn]} onPress={onAccept}>
+        </Focusable>
+        <Focusable style={[styles.offerBtn, styles.acceptBtn]} onPress={onAccept}>
           <Text style={styles.acceptBtnText}>Accept</Text>
-        </TouchableOpacity>
+        </Focusable>
       </View>
     </View>
   );
@@ -287,7 +287,7 @@ function FolderCard({ folder, onPress }: { folder: FolderView; onPress: () => vo
   const stale = isVault && lastSyncMs ? isStale(lastSyncMs, now) : false;
 
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
+    <Focusable onPress={onPress} activeOpacity={0.7}>
       <Card>
         <View style={styles.header}>
           <View style={styles.headerMain}>
@@ -346,7 +346,7 @@ function FolderCard({ folder, onPress }: { folder: FolderView; onPress: () => vo
           </Text>
         )}
       </Card>
-    </TouchableOpacity>
+    </Focusable>
   );
 }
 

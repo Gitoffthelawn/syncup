@@ -8,9 +8,9 @@ import {
   Switch,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
+import { Focusable } from '../components/Focusable';
 import { useSyncthingClient } from '../daemon/SyncthingContext';
 import type { FolderConfig, PullOrder } from '../api/types';
 import { colors } from '../components/ui';
@@ -145,19 +145,19 @@ export function FolderAdvancedEditor({ folder, onBack, onSaved }: Props) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={cancel} hitSlop={8}>
+        <Focusable onPress={cancel} hitSlop={8}>
           <Text style={styles.back}>‹ Back</Text>
-        </TouchableOpacity>
+        </Focusable>
         <Text style={styles.title} numberOfLines={1}>
           Advanced options
         </Text>
-        <TouchableOpacity onPress={save} disabled={!dirty || saving} hitSlop={8}>
+        <Focusable onPress={save} disabled={!dirty || saving} hitSlop={8}>
           {saving ? (
             <ActivityIndicator color={colors.accent} />
           ) : (
             <Text style={[styles.saveBtn, !dirty && styles.saveBtnDisabled]}>Save</Text>
           )}
-        </TouchableOpacity>
+        </Focusable>
       </View>
 
       <Text style={styles.folderLabel} numberOfLines={1}>
@@ -191,7 +191,7 @@ export function FolderAdvancedEditor({ folder, onBack, onSaved }: Props) {
           {PULL_ORDERS.map(opt => {
             const on = opt.value === pullOrder;
             return (
-              <TouchableOpacity
+              <Focusable
                 key={opt.value}
                 style={[styles.radioRow, on && styles.radioRowOn]}
                 onPress={() => setPullOrder(opt.value)}
@@ -206,7 +206,7 @@ export function FolderAdvancedEditor({ folder, onBack, onSaved }: Props) {
                   </Text>
                   <Text style={styles.radioHint}>{opt.hint}</Text>
                 </View>
-              </TouchableOpacity>
+              </Focusable>
             );
           })}
         </Section>
@@ -228,7 +228,7 @@ export function FolderAdvancedEditor({ folder, onBack, onSaved }: Props) {
               {DISK_UNITS.map(u => {
                 const on = u === minDiskUnit;
                 return (
-                  <TouchableOpacity
+                  <Focusable
                     key={u}
                     style={[styles.unitChip, on && styles.unitChipOn]}
                     onPress={() => setMinDiskUnit(u)}
@@ -236,7 +236,7 @@ export function FolderAdvancedEditor({ folder, onBack, onSaved }: Props) {
                     <Text style={[styles.unitChipText, on && styles.unitChipTextOn]}>
                       {u}
                     </Text>
-                  </TouchableOpacity>
+                  </Focusable>
                 );
               })}
             </View>

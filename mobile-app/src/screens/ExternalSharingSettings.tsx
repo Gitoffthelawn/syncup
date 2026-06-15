@@ -6,9 +6,9 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
+import { Focusable } from '../components/Focusable';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../components/ui';
 import { Icon } from '../components/Icon';
@@ -66,9 +66,9 @@ export function ExternalSharingSettings({ folder, onBack }: Props) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} hitSlop={8}>
+        <Focusable onPress={onBack} hitSlop={8}>
           <Text style={styles.back}>‹ Back</Text>
-        </TouchableOpacity>
+        </Focusable>
         <Text style={styles.title} numberOfLines={1}>External sharing</Text>
         <View style={{ width: 56 }} />
       </View>
@@ -112,10 +112,10 @@ export function ExternalSharingSettings({ folder, onBack }: Props) {
                 {generateLink(testPath.trim())}
               </Text>
             ) : null}
-            <TouchableOpacity style={styles.shareBtn} onPress={shareTestLink}>
+            <Focusable style={styles.shareBtn} onPress={shareTestLink}>
               <Icon name="share-outline" size={18} color={colors.accent} />
               <Text style={styles.shareBtnText}>Share link</Text>
-            </TouchableOpacity>
+            </Focusable>
 
             <Text style={styles.usageHint}>
               To share a file link from the file browser, long-press any file

@@ -1,5 +1,6 @@
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { Focusable } from './Focusable';
 import type { FolderConfig } from '../api/types';
 import { colors } from './ui';
 
@@ -46,7 +47,7 @@ export function FolderTypePicker({ value, onChange, disabled }: Props) {
       {OPTIONS.map(opt => {
         const on = opt.value === value;
         return (
-          <TouchableOpacity
+          <Focusable
             key={opt.value}
             style={[styles.row, on && styles.rowOn]}
             onPress={() => !disabled && onChange(opt.value)}
@@ -60,7 +61,7 @@ export function FolderTypePicker({ value, onChange, disabled }: Props) {
               <Text style={[styles.label, on && styles.labelOn]}>{opt.label}</Text>
               <Text style={styles.hint}>{opt.hint}</Text>
             </View>
-          </TouchableOpacity>
+          </Focusable>
         );
       })}
     </View>

@@ -5,9 +5,9 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
+import { Focusable } from '../components/Focusable';
 import { useSyncthing } from '../daemon/SyncthingContext';
 import { useResource } from '../daemon/useResource';
 import { useEventLog, useEventTrigger } from '../daemon/EventsContext';
@@ -106,7 +106,7 @@ export function StatusScreen() {
     >
       {statusError && <ErrorBox message={statusError} />}
 
-      <TouchableOpacity
+      <Focusable
         style={styles.recentLink}
         onPress={() => setRecentChangesOpen(true)}
       >
@@ -120,9 +120,9 @@ export function StatusScreen() {
           </Text>
         </View>
         <Text style={styles.recentLinkArrow}>›</Text>
-      </TouchableOpacity>
+      </Focusable>
 
-      <TouchableOpacity
+      <Focusable
         style={styles.recentLink}
         onPress={() => setTransfersOpen(true)}
       >
@@ -134,19 +134,19 @@ export function StatusScreen() {
           </Text>
         </View>
         <Text style={styles.recentLinkArrow}>›</Text>
-      </TouchableOpacity>
+      </Focusable>
 
       <Card>
         <CardTitle>Daemon</CardTitle>
         <Row label="Port" value={String(info.port)} />
         <Row label="GUI address" value={info.guiAddress} />
         <Row label="Device ID" value={info.deviceId} mono multiline />
-        <TouchableOpacity style={styles.qrBtn} onPress={() => setWebGuiOpen(true)}>
+        <Focusable style={styles.qrBtn} onPress={() => setWebGuiOpen(true)}>
           <Text style={styles.qrBtnText}>Open web GUI</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.qrBtn} onPress={() => setShowQR(true)}>
+        </Focusable>
+        <Focusable style={styles.qrBtn} onPress={() => setShowQR(true)}>
           <Text style={styles.qrBtnText}>Show QR code</Text>
-        </TouchableOpacity>
+        </Focusable>
       </Card>
 
       {webGuiOpen && (

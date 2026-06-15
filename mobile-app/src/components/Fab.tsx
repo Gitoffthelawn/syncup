@@ -1,5 +1,6 @@
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { Focusable } from './Focusable';
 import { colors } from './ui';
 import { useCoachTarget } from '../onboarding/coach/useCoachTarget';
 
@@ -15,9 +16,9 @@ export function Fab({ onPress, label = '+', coachId }: Props) {
     return <CoachableFab onPress={onPress} label={label} coachId={coachId} />;
   }
   return (
-    <TouchableOpacity style={styles.fab} onPress={onPress} activeOpacity={0.85}>
+    <Focusable style={styles.fab} onPress={onPress} activeOpacity={0.85}>
       <Text style={styles.label}>{label}</Text>
-    </TouchableOpacity>
+    </Focusable>
   );
 }
 
@@ -30,7 +31,7 @@ function CoachableFab({ onPress, label, coachId }: Props & { coachId: string }) 
       style={styles.fab}
       collapsable={false}
     >
-      <TouchableOpacity
+      <Focusable
         onPress={onPress}
         activeOpacity={0.85}
         style={StyleSheet.absoluteFill}
@@ -38,7 +39,7 @@ function CoachableFab({ onPress, label, coachId }: Props & { coachId: string }) 
         <View style={styles.inner}>
           <Text style={styles.label}>{label}</Text>
         </View>
-      </TouchableOpacity>
+      </Focusable>
     </View>
   );
 }

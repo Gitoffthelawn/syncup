@@ -4,9 +4,9 @@ import {
   Modal,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
+import { Focusable } from '../components/Focusable';
 import { QRScanner, useCameraPermissions } from '../components/QRScannerView';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../components/ui';
@@ -64,9 +64,9 @@ export function ScanDeviceQRModal({ visible, onCancel, onScanned }: Props) {
     <Modal visible={visible} animationType="slide" onRequestClose={onCancel} statusBarTranslucent>
       <View style={styles.root}>
         <View style={[styles.header, { paddingTop: 14 + insets.top }]}>
-          <TouchableOpacity onPress={onCancel}>
+          <Focusable onPress={onCancel}>
             <Text style={styles.cancel}>Cancel</Text>
-          </TouchableOpacity>
+          </Focusable>
           <Text style={styles.title}>Scan device QR</Text>
           <View style={{ width: 60 }} />
         </View>
@@ -83,13 +83,13 @@ export function ScanDeviceQRModal({ visible, onCancel, onScanned }: Props) {
                 SyncUp needs the camera to scan a peer's device-ID QR code.
               </Text>
               {permission.canAskAgain ? (
-                <TouchableOpacity style={styles.permBtn} onPress={requestPermission}>
+                <Focusable style={styles.permBtn} onPress={requestPermission}>
                   <Text style={styles.permBtnText}>Grant access</Text>
-                </TouchableOpacity>
+                </Focusable>
               ) : (
-                <TouchableOpacity style={styles.permBtn} onPress={openSettingsHint}>
+                <Focusable style={styles.permBtn} onPress={openSettingsHint}>
                   <Text style={styles.permBtnText}>Open Settings</Text>
-                </TouchableOpacity>
+                </Focusable>
               )}
             </View>
           ) : !scannedOnce ? (

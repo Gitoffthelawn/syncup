@@ -6,9 +6,9 @@ import {
   Image,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
+import { Focusable } from '../components/Focusable';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Haptics from 'expo-haptics';
 import { useSyncthingClient } from '../daemon/SyncthingContext';
@@ -250,13 +250,13 @@ export function ConflictResolver({ folder, onBack, onChanged }: Props) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} hitSlop={8}>
+        <Focusable onPress={onBack} hitSlop={8}>
           <Text style={styles.back}>‹ Back</Text>
-        </TouchableOpacity>
+        </Focusable>
         <Text style={styles.title} numberOfLines={1}>Conflicts</Text>
-        <TouchableOpacity onPress={scan} hitSlop={8}>
+        <Focusable onPress={scan} hitSlop={8}>
           <Text style={styles.refresh}>Rescan</Text>
-        </TouchableOpacity>
+        </Focusable>
       </View>
 
       {loading ? (
@@ -267,9 +267,9 @@ export function ConflictResolver({ folder, onBack, onChanged }: Props) {
       ) : error ? (
         <View style={styles.center}>
           <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryBtn} onPress={scan}>
+          <Focusable style={styles.retryBtn} onPress={scan}>
             <Text style={styles.retryText}>Retry</Text>
-          </TouchableOpacity>
+          </Focusable>
         </View>
       ) : groups.length === 0 ? (
         <View style={styles.center}>
@@ -374,7 +374,7 @@ function VersionRow({
 
   return (
     <View style={styles.versionRow}>
-      <TouchableOpacity style={styles.versionMain} onPress={onPreview}>
+      <Focusable style={styles.versionMain} onPress={onPreview}>
         <View style={styles.versionIcon}>
           {showThumb ? (
             <Image source={{ uri }} style={styles.thumb} />
@@ -388,16 +388,16 @@ function VersionRow({
             {formatBytes(entry.size)}   {formatModTime(entry.modTime)}
           </Text>
         </View>
-      </TouchableOpacity>
+      </Focusable>
       <View style={styles.actionsRow}>
         {onMerge && (
-          <TouchableOpacity style={styles.mergeBtn} onPress={onMerge}>
+          <Focusable style={styles.mergeBtn} onPress={onMerge}>
             <Text style={styles.mergeBtnText}>Merge…</Text>
-          </TouchableOpacity>
+          </Focusable>
         )}
-        <TouchableOpacity style={styles.keepBtn} onPress={onKeep}>
+        <Focusable style={styles.keepBtn} onPress={onKeep}>
           <Text style={styles.keepBtnText}>{keepLabel}</Text>
-        </TouchableOpacity>
+        </Focusable>
       </View>
     </View>
   );

@@ -8,11 +8,11 @@ import {
   Switch,
   Text,
   TextInput,
-  TouchableOpacity,
   TouchableWithoutFeedback,
   useWindowDimensions,
   View,
 } from 'react-native';
+import { Focusable } from '../components/Focusable';
 import { useSyncthingClient } from '../daemon/SyncthingContext';
 import type { Completion, ConnectionInfo, DeviceConfig, FolderConfig } from '../api/types';
 import { colors, formatBytes } from '../components/ui';
@@ -310,19 +310,19 @@ export function DeviceDetailModal({
           ) : (
           <>
           <View style={styles.header}>
-            <TouchableOpacity onPress={onClose}>
+            <Focusable onPress={onClose}>
               <Text style={styles.cancel}>Close</Text>
-            </TouchableOpacity>
+            </Focusable>
             <Text style={styles.title} numberOfLines={1}>
               {device.name || stateLabel}
             </Text>
-            <TouchableOpacity onPress={save} disabled={!dirty || busy}>
+            <Focusable onPress={save} disabled={!dirty || busy}>
               {busy ? (
                 <ActivityIndicator color={colors.accent} />
               ) : (
                 <Text style={[styles.save, !dirty && styles.saveDisabled]}>Save</Text>
               )}
-            </TouchableOpacity>
+            </Focusable>
           </View>
 
           <ScrollView contentContainerStyle={styles.body}>
@@ -386,7 +386,7 @@ export function DeviceDetailModal({
                 const label = f.label || f.id;
                 const comp = on ? completions[f.id] : undefined;
                 return (
-                  <TouchableOpacity
+                  <Focusable
                     key={f.id}
                     style={[styles.folder, on && styles.folderOn]}
                     onPress={() => toggleFolder(f.id)}
@@ -406,13 +406,13 @@ export function DeviceDetailModal({
                     <View style={[styles.checkbox, on && styles.checkboxOn]}>
                       {on && <Text style={styles.checkmark}>✓</Text>}
                     </View>
-                  </TouchableOpacity>
+                  </Focusable>
                 );
               })
             )}
 
             {!isSelf && (
-              <TouchableOpacity
+              <Focusable
                 style={styles.advancedRow}
                 onPress={() => setPage('advanced')}
               >
@@ -424,12 +424,12 @@ export function DeviceDetailModal({
                   </Text>
                 </View>
                 <Text style={styles.advancedArrow}>›</Text>
-              </TouchableOpacity>
+              </Focusable>
             )}
 
             {!isSelf && (
               <View style={styles.actions}>
-                <TouchableOpacity
+                <Focusable
                   style={[styles.actionBtn, styles.pauseBtn]}
                   onPress={togglePause}
                   disabled={busy}
@@ -437,14 +437,14 @@ export function DeviceDetailModal({
                   <Text style={styles.actionBtnText}>
                     {device.paused ? 'Resume' : 'Pause'}
                   </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
+                </Focusable>
+                <Focusable
                   style={[styles.actionBtn, styles.deleteBtn]}
                   onPress={confirmDelete}
                   disabled={busy}
                 >
                   <Text style={[styles.actionBtnText, styles.deleteBtnText]}>Remove</Text>
-                </TouchableOpacity>
+                </Focusable>
               </View>
             )}
           </ScrollView>

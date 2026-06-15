@@ -4,11 +4,11 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   TouchableWithoutFeedback,
   useWindowDimensions,
   View,
 } from 'react-native';
+import { Focusable } from '../components/Focusable';
 import { useRecentChanges } from '../daemon/RecentChangesContext';
 import { useSyncthingClient } from '../daemon/SyncthingContext';
 import type { FolderConfig } from '../api/types';
@@ -78,19 +78,19 @@ export function RecentChangesModal({ visible, onClose }: Props) {
         <View style={[styles.sheet, { height: sheetHeight }]}>
           <View style={styles.container}>
             <View style={styles.header}>
-              <TouchableOpacity onPress={onClose} hitSlop={8}>
+              <Focusable onPress={onClose} hitSlop={8}>
                 <Text style={styles.cancel}>Close</Text>
-              </TouchableOpacity>
+              </Focusable>
               <Text style={styles.title} numberOfLines={1}>
                 Recent changes
               </Text>
-              <TouchableOpacity onPress={clear} hitSlop={8} disabled={changes.length === 0}>
+              <Focusable onPress={clear} hitSlop={8} disabled={changes.length === 0}>
                 <Text
                   style={[styles.clear, changes.length === 0 && styles.clearDisabled]}
                 >
                   Clear
                 </Text>
-              </TouchableOpacity>
+              </Focusable>
             </View>
 
             <View style={styles.summary}>

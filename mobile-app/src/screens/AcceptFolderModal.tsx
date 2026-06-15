@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { Focusable } from '../components/Focusable';
 import { FormModal } from '../components/FormModal';
 import { colors } from '../components/ui';
 import { useSyncthing, useSyncthingClient } from '../daemon/SyncthingContext';
@@ -198,7 +199,7 @@ export function AcceptFolderModal({ visible, offer, onClose, onAccepted }: Props
         </View>
 
         <Text style={styles.sectionLabel}>Where to store it</Text>
-        <TouchableOpacity
+        <Focusable
           style={[styles.pickerBtn, !path && styles.pickerBtnEmpty]}
           onPress={pickExternal}
         >
@@ -206,7 +207,7 @@ export function AcceptFolderModal({ visible, offer, onClose, onAccepted }: Props
             {displayPath || 'Pick a folder on this device…'}
           </Text>
           <Text style={styles.pickerArrow}>›</Text>
-        </TouchableOpacity>
+        </Focusable>
         <Text style={styles.hint}>
           {isExternal
             ? 'Files from the peer will sync directly with this device folder.'
@@ -215,7 +216,7 @@ export function AcceptFolderModal({ visible, offer, onClose, onAccepted }: Props
               : 'Pick any folder on your device, or tap below to use app storage.'}
         </Text>
         {isExternal ? (
-          <TouchableOpacity
+          <Focusable
             style={styles.safBtn}
             onPress={() => {
               setIsExternal(false);
@@ -224,15 +225,15 @@ export function AcceptFolderModal({ visible, offer, onClose, onAccepted }: Props
             }}
           >
             <Text style={styles.safBtnText}>Use app storage instead</Text>
-          </TouchableOpacity>
+          </Focusable>
         ) : (
-          <TouchableOpacity
+          <Focusable
             style={styles.safBtn}
             onPress={() => setPickerOpen(true)}
             disabled={!pickerRoot}
           >
             <Text style={styles.safBtnText}>Use app storage instead</Text>
-          </TouchableOpacity>
+          </Focusable>
         )}
 
         <Text style={[styles.sectionLabel, { marginTop: 20 }]}>Folder kind</Text>
@@ -260,7 +261,7 @@ export function AcceptFolderModal({ visible, offer, onClose, onAccepted }: Props
             {otherPeers.map(d => {
               const on = extraPeers.has(d.deviceID);
               return (
-                <TouchableOpacity
+                <Focusable
                   key={d.deviceID}
                   style={[styles.peer, on && styles.peerOn]}
                   onPress={() => togglePeer(d.deviceID)}
@@ -272,7 +273,7 @@ export function AcceptFolderModal({ visible, offer, onClose, onAccepted }: Props
                   <View style={[styles.checkbox, on && styles.checkboxOn]}>
                     {on && <Text style={styles.checkmark}>✓</Text>}
                   </View>
-                </TouchableOpacity>
+                </Focusable>
               );
             })}
           </>
@@ -320,7 +321,7 @@ function PresetChip({
   onPress: () => void;
 }) {
   return (
-    <TouchableOpacity
+    <Focusable
       style={[styles.presetChip, active && styles.presetChipOn]}
       onPress={onPress}
     >
@@ -328,7 +329,7 @@ function PresetChip({
         {label}
       </Text>
       <Text style={styles.presetChipHint}>{hint}</Text>
-    </TouchableOpacity>
+    </Focusable>
   );
 }
 

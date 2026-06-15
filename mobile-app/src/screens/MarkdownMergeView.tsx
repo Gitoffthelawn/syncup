@@ -6,9 +6,9 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
+import { Focusable } from '../components/Focusable';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../components/ui';
@@ -151,9 +151,9 @@ export function MarkdownMergeView({
     return (
       <View style={styles.center}>
         <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity style={styles.secondaryBtn} onPress={onCancel}>
+        <Focusable style={styles.secondaryBtn} onPress={onCancel}>
           <Text style={styles.secondaryBtnText}>Back</Text>
-        </TouchableOpacity>
+        </Focusable>
       </View>
     );
   }
@@ -167,11 +167,11 @@ export function MarkdownMergeView({
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={onCancel} hitSlop={8}>
+        <Focusable onPress={onCancel} hitSlop={8}>
           <Text style={styles.back}>‹ Back</Text>
-        </TouchableOpacity>
+        </Focusable>
         <Text style={styles.title} numberOfLines={1}>Merge</Text>
-        <TouchableOpacity onPress={save} disabled={saving || (!allResolved && !noConflicts)} hitSlop={8}>
+        <Focusable onPress={save} disabled={saving || (!allResolved && !noConflicts)} hitSlop={8}>
           {saving ? (
             <ActivityIndicator color={colors.accent} />
           ) : (
@@ -179,7 +179,7 @@ export function MarkdownMergeView({
               Save
             </Text>
           )}
-        </TouchableOpacity>
+        </Focusable>
       </View>
 
       <View style={styles.summaryBar}>
@@ -264,18 +264,18 @@ export function MarkdownMergeView({
                     textAlignVertical="top"
                   />
                   <View style={styles.editorActions}>
-                    <TouchableOpacity
+                    <Focusable
                       style={styles.editorCancel}
                       onPress={() => cancelEdit(hunk.id)}
                     >
                       <Text style={styles.editorCancelText}>Cancel</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
+                    </Focusable>
+                    <Focusable
                       style={styles.editorCommit}
                       onPress={() => commitEdit(hunk.id)}
                     >
                       <Text style={styles.editorCommitText}>Use this</Text>
-                    </TouchableOpacity>
+                    </Focusable>
                   </View>
                 </View>
               )}
@@ -304,14 +304,14 @@ function ChoiceBtn({
   onPress: () => void;
 }) {
   return (
-    <TouchableOpacity
+    <Focusable
       style={[styles.choiceBtn, active && styles.choiceBtnActive]}
       onPress={onPress}
     >
       <Text style={[styles.choiceBtnText, active && styles.choiceBtnTextActive]}>
         {label}
       </Text>
-    </TouchableOpacity>
+    </Focusable>
   );
 }
 

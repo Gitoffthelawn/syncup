@@ -8,9 +8,9 @@ import {
   Switch,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
+import { Focusable } from '../components/Focusable';
 import { useSyncthingClient } from '../daemon/SyncthingContext';
 import type { DeviceConfig } from '../api/types';
 import { colors } from '../components/ui';
@@ -142,19 +142,19 @@ export function DeviceAdvancedEditor({ device, onBack, onSaved }: Props) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={cancel} hitSlop={8}>
+        <Focusable onPress={cancel} hitSlop={8}>
           <Text style={styles.back}>‹ Back</Text>
-        </TouchableOpacity>
+        </Focusable>
         <Text style={styles.title} numberOfLines={1}>
           Advanced options
         </Text>
-        <TouchableOpacity onPress={save} disabled={!dirty || saving} hitSlop={8}>
+        <Focusable onPress={save} disabled={!dirty || saving} hitSlop={8}>
           {saving ? (
             <ActivityIndicator color={colors.accent} />
           ) : (
             <Text style={[styles.saveBtn, !dirty && styles.saveBtnDisabled]}>Save</Text>
           )}
-        </TouchableOpacity>
+        </Focusable>
       </View>
 
       <Text style={styles.deviceLabel} numberOfLines={1}>
@@ -169,7 +169,7 @@ export function DeviceAdvancedEditor({ device, onBack, onSaved }: Props) {
           {COMPRESSION_OPTIONS.map(opt => {
             const on = opt.value === compression;
             return (
-              <TouchableOpacity
+              <Focusable
                 key={opt.value}
                 style={[styles.radioRow, on && styles.radioRowOn]}
                 onPress={() => setCompression(opt.value)}
@@ -184,7 +184,7 @@ export function DeviceAdvancedEditor({ device, onBack, onSaved }: Props) {
                   </Text>
                   <Text style={styles.radioHint}>{opt.hint}</Text>
                 </View>
-              </TouchableOpacity>
+              </Focusable>
             );
           })}
         </Section>

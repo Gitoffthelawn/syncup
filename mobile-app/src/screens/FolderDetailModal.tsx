@@ -11,11 +11,11 @@ import {
   Switch,
   Text,
   TextInput,
-  TouchableOpacity,
   TouchableWithoutFeedback,
   useWindowDimensions,
   View,
 } from 'react-native';
+import { Focusable } from '../components/Focusable';
 import { useKeyboardHeight } from '../hooks/useKeyboardHeight';
 import { useSyncthing, useSyncthingClient } from '../daemon/SyncthingContext';
 import type { DbStatus, DeviceConfig, FolderConfig, FolderError } from '../api/types';
@@ -573,19 +573,19 @@ export function FolderDetailModal({
           ) : (
           <>
           <View style={styles.header}>
-            <TouchableOpacity onPress={onClose}>
+            <Focusable onPress={onClose}>
               <Text style={styles.cancel}>Close</Text>
-            </TouchableOpacity>
+            </Focusable>
             <Text style={styles.title} numberOfLines={1}>
               {folder.label || folder.id}
             </Text>
-            <TouchableOpacity onPress={saveChanges} disabled={!dirty || busy}>
+            <Focusable onPress={saveChanges} disabled={!dirty || busy}>
               {busy ? (
                 <ActivityIndicator color={colors.accent} />
               ) : (
                 <Text style={[styles.save, !dirty && styles.saveDisabled]}>Save</Text>
               )}
-            </TouchableOpacity>
+            </Focusable>
           </View>
 
           <ScrollView contentContainerStyle={styles.body}>
@@ -599,7 +599,7 @@ export function FolderDetailModal({
                     Apply the preset to ignore Obsidian's per-device workspace files and tighten the rescan interval.
                   </Text>
                 </View>
-                <TouchableOpacity
+                <Focusable
                   style={styles.vaultBannerBtn}
                   onPress={applyObsidianPreset}
                   disabled={busy}
@@ -607,7 +607,7 @@ export function FolderDetailModal({
                   <Text style={styles.vaultBannerBtnText}>
                     {busy ? '…' : 'Apply'}
                   </Text>
-                </TouchableOpacity>
+                </Focusable>
               </View>
             )}
 
@@ -650,7 +650,7 @@ export function FolderDetailModal({
                       ? 'This folder is outside the app sandbox and needs the "All files access" permission to sync. This is common after restoring a backup.'
                       : 'Storage access was revoked. This folder cannot sync until you re-grant access.'}
                   </Text>
-                  <TouchableOpacity
+                  <Focusable
                     style={styles.safPermBtn}
                     onPress={() => {
                       if (externalFolderNeedsAllFilesAccess(folder)) {
@@ -681,7 +681,7 @@ export function FolderDetailModal({
                         ? 'Grant All files access'
                         : 'Re-grant access'}
                     </Text>
-                  </TouchableOpacity>
+                  </Focusable>
                 </View>
               )}
               {status && (
@@ -716,7 +716,7 @@ export function FolderDetailModal({
               )}
             </View>
 
-            <TouchableOpacity style={styles.browseBtn} onPress={() => setPage('browse')}>
+            <Focusable style={styles.browseBtn} onPress={() => setPage('browse')}>
               <Icon name="folder-open" size={22} color={colors.accent} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.browseTitle}>Browse files</Text>
@@ -727,10 +727,10 @@ export function FolderDetailModal({
                 </Text>
               </View>
               <Text style={styles.browseArrow}>›</Text>
-            </TouchableOpacity>
+            </Focusable>
 
             {vaultDetected && obsidianInstalled && (
-              <TouchableOpacity style={styles.browseBtn} onPress={openInObsidian}>
+              <Focusable style={styles.browseBtn} onPress={openInObsidian}>
                 <Icon name="document-text" size={22} color={colors.accent} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.browseTitle}>Open in Obsidian</Text>
@@ -739,10 +739,10 @@ export function FolderDetailModal({
                   </Text>
                 </View>
                 <Text style={styles.browseArrow}>›</Text>
-              </TouchableOpacity>
+              </Focusable>
             )}
 
-            <TouchableOpacity style={styles.browseBtn} onPress={() => setPage('statistics')}>
+            <Focusable style={styles.browseBtn} onPress={() => setPage('statistics')}>
               <Icon name="bar-chart" size={22} color={colors.accent} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.browseTitle}>Statistics</Text>
@@ -751,9 +751,9 @@ export function FolderDetailModal({
                 </Text>
               </View>
               <Text style={styles.browseArrow}>›</Text>
-            </TouchableOpacity>
+            </Focusable>
 
-            <TouchableOpacity style={styles.browseBtn} onPress={() => setPage('ignores')}>
+            <Focusable style={styles.browseBtn} onPress={() => setPage('ignores')}>
               <Icon name="eye-off" size={22} color={colors.accent} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.browseTitle}>Ignore patterns</Text>
@@ -766,9 +766,9 @@ export function FolderDetailModal({
                 </Text>
               </View>
               <Text style={styles.browseArrow}>›</Text>
-            </TouchableOpacity>
+            </Focusable>
 
-            <TouchableOpacity style={styles.browseBtn} onPress={() => setPage('versioning')}>
+            <Focusable style={styles.browseBtn} onPress={() => setPage('versioning')}>
               <Icon name="layers" size={22} color={colors.accent} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.browseTitle}>File versioning</Text>
@@ -777,9 +777,9 @@ export function FolderDetailModal({
                 </Text>
               </View>
               <Text style={styles.browseArrow}>›</Text>
-            </TouchableOpacity>
+            </Focusable>
 
-            <TouchableOpacity style={styles.browseBtn} onPress={() => setPage('advanced')}>
+            <Focusable style={styles.browseBtn} onPress={() => setPage('advanced')}>
               <Icon name="settings" size={22} color={colors.accent} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.browseTitle}>Advanced options</Text>
@@ -788,7 +788,7 @@ export function FolderDetailModal({
                 </Text>
               </View>
               <Text style={styles.browseArrow}>›</Text>
-            </TouchableOpacity>
+            </Focusable>
 
             {errors.length > 0 && (
               <View style={styles.errorsCard}>
@@ -810,7 +810,7 @@ export function FolderDetailModal({
               </View>
             )}
 
-            <TouchableOpacity style={styles.browseBtn} onPress={() => setPage('conflicts')}>
+            <Focusable style={styles.browseBtn} onPress={() => setPage('conflicts')}>
               <Icon name="warning" size={22} color="#e5a94b" />
               <View style={{ flex: 1 }}>
                 <Text style={styles.browseTitle}>Resolve conflicts</Text>
@@ -819,9 +819,9 @@ export function FolderDetailModal({
                 </Text>
               </View>
               <Text style={styles.browseArrow}>›</Text>
-            </TouchableOpacity>
+            </Focusable>
 
-            <TouchableOpacity style={styles.browseBtn} onPress={() => setPage('sharing')}>
+            <Focusable style={styles.browseBtn} onPress={() => setPage('sharing')}>
               <Icon name="link" size={22} color={colors.accent} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.browseTitle}>External sharing</Text>
@@ -830,7 +830,7 @@ export function FolderDetailModal({
                 </Text>
               </View>
               <Text style={styles.browseArrow}>›</Text>
-            </TouchableOpacity>
+            </Focusable>
 
             {folder.type !== 'sendonly' && folder.type !== 'receiveencrypted' && (
               <View style={styles.selectiveSyncRow}>
@@ -866,7 +866,7 @@ export function FolderDetailModal({
                 const on = selected.has(d.deviceID);
                 return (
                   <View key={d.deviceID}>
-                    <TouchableOpacity
+                    <Focusable
                       style={[styles.peer, on && styles.peerOn]}
                       onPress={() => togglePeer(d.deviceID)}
                     >
@@ -877,7 +877,7 @@ export function FolderDetailModal({
                       <View style={[styles.checkbox, on && styles.checkboxOn]}>
                         {on && <Text style={styles.checkmark}>✓</Text>}
                       </View>
-                    </TouchableOpacity>
+                    </Focusable>
                     {on && folderType === 'receiveencrypted' && (
                       <View style={styles.encryptionRow}>
                         <Text style={styles.encryptionLabel}>Encryption password</Text>
@@ -901,7 +901,7 @@ export function FolderDetailModal({
             )}
 
             <View style={styles.actions}>
-              <TouchableOpacity
+              <Focusable
                 style={[styles.actionBtn, styles.pauseBtn]}
                 onPress={rescan}
                 disabled={busy || folder.paused}
@@ -909,19 +909,19 @@ export function FolderDetailModal({
                 <Text style={[styles.actionBtnText, folder.paused && styles.actionBtnDisabled]}>
                   Rescan
                 </Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.actionBtn, styles.pauseBtn]} onPress={togglePause} disabled={busy}>
+              </Focusable>
+              <Focusable style={[styles.actionBtn, styles.pauseBtn]} onPress={togglePause} disabled={busy}>
                 <Text style={styles.actionBtnText}>
                   {folder.paused ? 'Resume' : 'Pause'}
                 </Text>
-              </TouchableOpacity>
+              </Focusable>
             </View>
 
             {folder.type === 'sendonly' &&
               status &&
               status.needBytes === 0 &&
               status.receiveOnlyChangedBytes === 0 ? null : folder.type === 'sendonly' ? (
-              <TouchableOpacity
+              <Focusable
                 style={[styles.actionBtn, styles.overrideBtn]}
                 onPress={override}
                 disabled={busy}
@@ -929,11 +929,11 @@ export function FolderDetailModal({
                 <Text style={[styles.actionBtnText, styles.overrideBtnText]}>
                   Override changes (send local state)
                 </Text>
-              </TouchableOpacity>
+              </Focusable>
             ) : null}
 
             {folder.type === 'receiveonly' && status && status.receiveOnlyChangedBytes > 0 ? (
-              <TouchableOpacity
+              <Focusable
                 style={[styles.actionBtn, styles.overrideBtn]}
                 onPress={revert}
                 disabled={busy}
@@ -941,16 +941,16 @@ export function FolderDetailModal({
                 <Text style={[styles.actionBtnText, styles.overrideBtnText]}>
                   Revert local changes ({formatBytes(status.receiveOnlyChangedBytes)})
                 </Text>
-              </TouchableOpacity>
+              </Focusable>
             ) : null}
 
-            <TouchableOpacity
+            <Focusable
               style={[styles.actionBtn, styles.deleteBtn, styles.deleteBtnFull]}
               onPress={confirmDelete}
               disabled={busy}
             >
               <Text style={[styles.actionBtnText, styles.deleteBtnText]}>Delete folder</Text>
-            </TouchableOpacity>
+            </Focusable>
 
           </ScrollView>
           </>

@@ -15,9 +15,9 @@ import {
   Switch,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
+import { Focusable } from '../components/Focusable';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import GoBridge from '../GoServerBridgeJSI';
 import { useAppReload } from '../AppReload';
@@ -409,9 +409,9 @@ export function SettingsScreen() {
             scrollRef={scrollRef}
           />
           <Row label="Device ID" value={info.deviceId} mono multiline />
-          <TouchableOpacity style={styles.qrBtn} onPress={() => setShowQR(true)}>
+          <Focusable style={styles.qrBtn} onPress={() => setShowQR(true)}>
             <Text style={styles.qrBtnText}>Show QR for pairing</Text>
-          </TouchableOpacity>
+          </Focusable>
         </Card>
       )}
 
@@ -432,7 +432,7 @@ export function SettingsScreen() {
             </>
           )}
           <Row label="GUI" value={info.guiAddress} />
-          <TouchableOpacity
+          <Focusable
             style={styles.linkRow}
             onPress={() => setPhotoBackupOpen(true)}
           >
@@ -443,8 +443,8 @@ export function SettingsScreen() {
               </Text>
             </View>
             <Text style={styles.linkRowArrow}>›</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
+          </Focusable>
+          <Focusable
             style={styles.linkRow}
             onPress={() => setGlobalOptionsOpen(true)}
           >
@@ -455,8 +455,8 @@ export function SettingsScreen() {
               </Text>
             </View>
             <Text style={styles.linkRowArrow}>›</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
+          </Focusable>
+          <Focusable
             style={styles.linkRow}
             onPress={() => setLogsOpen(true)}
           >
@@ -467,8 +467,8 @@ export function SettingsScreen() {
               </Text>
             </View>
             <Text style={styles.linkRowArrow}>›</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
+          </Focusable>
+          <Focusable
             style={styles.linkRow}
             onPress={() => {
               onboarding.reset();
@@ -482,10 +482,10 @@ export function SettingsScreen() {
               </Text>
             </View>
             <Text style={styles.linkRowArrow}>›</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.button} onPress={confirmRestart}>
+          </Focusable>
+          <Focusable style={styles.button} onPress={confirmRestart}>
             <Text style={styles.buttonText}>Restart daemon</Text>
-          </TouchableOpacity>
+          </Focusable>
         </Card>
       )}
 
@@ -561,9 +561,9 @@ export function SettingsScreen() {
           <Text style={styles.aboutText}>
             Android aggressively kills foreground services on some OEMs. Whitelisting this app from battery optimization keeps the daemon alive while the device sleeps.
           </Text>
-          <TouchableOpacity style={styles.button} onPress={openBatterySettings}>
+          <Focusable style={styles.button} onPress={openBatterySettings}>
             <Text style={styles.buttonText}>Battery optimization settings</Text>
-          </TouchableOpacity>
+          </Focusable>
         </Card>
       )}
 
@@ -621,9 +621,9 @@ export function SettingsScreen() {
         <Card>
           <CardTitle>Identity</CardTitle>
           <Row label="Device ID" value={info.deviceId} mono multiline />
-          <TouchableOpacity style={styles.qrBtn} onPress={() => setShowQR(true)}>
+          <Focusable style={styles.qrBtn} onPress={() => setShowQR(true)}>
             <Text style={styles.qrBtnText}>Show QR code</Text>
-          </TouchableOpacity>
+          </Focusable>
           <Text style={styles.hint}>
             Share this Device ID with a peer to link devices. Long-press to copy.
           </Text>
@@ -643,7 +643,7 @@ export function SettingsScreen() {
           {isAndroid ? ' device preferences' : ' app settings'} to a zip you can move to another device
           or keep as a recovery copy. Restoring replaces the current identity with the one in the chosen backup.
         </Text>
-        <TouchableOpacity
+        <Focusable
           style={styles.button}
           onPress={handleExport}
           disabled={!!backupBusy}
@@ -651,8 +651,8 @@ export function SettingsScreen() {
           <Text style={styles.buttonText}>
             {backupBusy === 'export' ? 'Working...' : 'Export backup'}
           </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
+        </Focusable>
+        <Focusable
           style={[styles.button, styles.buttonDanger]}
           onPress={confirmImport}
           disabled={!!backupBusy}
@@ -660,7 +660,7 @@ export function SettingsScreen() {
           <Text style={[styles.buttonText, styles.buttonDangerText]}>
             {backupBusy === 'import' ? 'Working...' : 'Restore from backup'}
           </Text>
-        </TouchableOpacity>
+        </Focusable>
         <Text style={styles.hint}>
           Syncthing-Fork backups import as-is, including password-protected (AES-256) archives;
           you'll be prompted for the password. The fork's extras (https keys, index database) are
@@ -674,12 +674,12 @@ export function SettingsScreen() {
         <Text style={styles.aboutText}>
           Fully stops SyncUp. Sync halts, the background notification goes away, and nothing runs in the background until you open the app again.
         </Text>
-        <TouchableOpacity
+        <Focusable
           style={[styles.button, styles.buttonDanger]}
           onPress={confirmStop}
         >
           <Text style={[styles.buttonText, styles.buttonDangerText]}>Stop app</Text>
-        </TouchableOpacity>
+        </Focusable>
       </Card>
 
       <Card>
@@ -767,7 +767,7 @@ export function SettingsScreen() {
                 }}
               />
               <View style={styles.pwButtonRow}>
-                <TouchableOpacity
+                <Focusable
                   style={styles.pwButton}
                   onPress={() => {
                     passwordPrompt.resolve(null);
@@ -775,8 +775,8 @@ export function SettingsScreen() {
                   }}
                 >
                   <Text style={styles.pwButtonText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
+                </Focusable>
+                <Focusable
                   style={[styles.pwButton, styles.pwButtonPrimary]}
                   onPress={() => {
                     passwordPrompt.resolve(passwordDraft);
@@ -786,7 +786,7 @@ export function SettingsScreen() {
                   <Text style={[styles.pwButtonText, styles.pwButtonPrimaryText]}>
                     Decrypt
                   </Text>
-                </TouchableOpacity>
+                </Focusable>
               </View>
             </View>
           </View>
@@ -880,13 +880,13 @@ function DeviceNameRow({
           returnKeyType="done"
         />
         {dirty && (
-          <TouchableOpacity
+          <Focusable
             onPress={saveAndMaybeAdvance}
             disabled={saving}
             style={styles.nameSave}
           >
             <Text style={styles.nameSaveText}>{saving ? '...' : 'Save'}</Text>
-          </TouchableOpacity>
+          </Focusable>
         )}
       </View>
       {err && <Text style={styles.nameErr}>{err}</Text>}

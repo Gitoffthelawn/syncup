@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Platform, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { SyncthingProvider } from './src/daemon/SyncthingContext';
 import { EventsProvider } from './src/daemon/EventsContext';
@@ -16,6 +16,7 @@ import { CoachOverlay } from './src/onboarding/coach/CoachOverlay';
 import { useOnboarding } from './src/onboarding/useOnboarding';
 import { AppReloadProvider } from './src/AppReload';
 import { colors } from './src/components/ui';
+import { Focusable } from './src/components/Focusable';
 
 type Tab = 'status' | 'folders' | 'devices' | 'settings';
 
@@ -49,6 +50,8 @@ function Shell() {
   const [tab, setTab] = useState<Tab>('status');
   const [searchOpen, setSearchOpen] = useState(false);
   const onboarding = useOnboarding();
+  const { width } = useWindowDimensions();
+  const isWide = width >= 700;
 
   const handleSetTab = useCallback((next: CoachTabKey) => setTab(next), []);
   const handleOnboardingDone = useCallback(() => {
@@ -60,36 +63,41 @@ function Shell() {
       <CoachAutoStart pending={onboarding.state === 'pending'} />
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <StatusBar style="light" />
-        <View style={styles.header}>
-          <Text style={styles.title}>SyncUp</Text>
-          <TouchableOpacity onPress={() => setSearchOpen(true)} hitSlop={10}>
-            <Text style={styles.searchIcon}>🔍</Text>
-          </TouchableOpacity>
-        </View>
-        {searchOpen && <SearchModal visible onClose={() => setSearchOpen(false)} />}
-
-        <View style={styles.screen}>
-          {tab === 'status' && <StatusScreen />}
-          {tab === 'folders' && <FoldersScreen />}
-          {tab === 'devices' && <DevicesScreen />}
-          {tab === 'settings' && <SettingsScreen />}
-        </View>
-
-        <SafeAreaView edges={['bottom']} style={styles.tabBarSafeArea}>
-          <View style={styles.tabBar}>
-            {TABS.map(t => (
-              <TouchableOpacity
-                key={t.key}
-                style={[styles.tab, tab === t.key && styles.tabActive]}
-                onPress={() => setTab(t.key)}
-              >
-                <Text style={[styles.tabText, tab === t.key && styles.tabTextActive]}>
-                  {t.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
+        <View style={[styles.column, isWide && styles.columnWide]}>
+          <View style={styles.header}>
+            <Text style={styles.title}>SyncUp</Text>
+            <Focusable onPress={() => setSearchOpen(true)} hitSlop={10}>
+              <Text style={styles.searchIcon}>🔍</Text>
+            </Focusable>
           </View>
-        </SafeAreaView>
+          {searchOpen && <SearchModal visible onClose={() => setSearchOpen(false)} />}
+
+          <View style={styles.screen}>
+            {tab === 'status' && <StatusScreen />}
+            {tab === 'folders' && <FoldersScreen />}
+            {tab === 'devices' && <DevicesScreen />}
+            {tab === 'settings' && <SettingsScreen />}
+          </View>
+
+          <SafeAreaView edges={['bottom']} style={styles.tabBarSafeArea}>
+            <View style={styles.tabBar}>
+              {TABS.map(t => (
+                <Focusable
+                  key={t.key}
+                  accessibilityLabel={t.label}
+                  style={[styles.tab, tab === t.key && styles.tabActive]}
+                  focusStyle={styles.tabFocused}
+                  hasTVPreferredFocus={Platform.isTV && tab === t.key}
+                  onPress={() => setTab(t.key)}
+                >
+                  <Text style={[styles.tabText, tab === t.key && styles.tabTextActive]}>
+                    {t.label}
+                  </Text>
+                </Focusable>
+              ))}
+            </View>
+          </SafeAreaView>
+        </View>
       </SafeAreaView>
 
       <CoachOverlay />
@@ -112,6 +120,9 @@ function CoachAutoStart({ pending }: { pending: boolean }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
+  column: { flex: 1, width: '100%' },
+  // Centered, width-capped column for wide screens (Android TV, tablets).
+  columnWide: { maxWidth: 600, width: '100%', alignSelf: 'center' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -139,6 +150,7 @@ const styles = StyleSheet.create({
     borderTopColor: 'transparent',
   },
   tabActive: { borderTopColor: colors.accent },
+  tabFocused: { backgroundColor: 'rgba(31, 111, 235, 0.22)', borderTopColor: colors.accent },
   tabText: { color: colors.textDim, fontSize: 13, fontWeight: '500' },
   tabTextActive: { color: colors.accent, fontWeight: '600' },
 });

@@ -7,10 +7,10 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
+import { Focusable } from '../components/Focusable';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../components/ui';
 import { Icon } from '../components/Icon';
@@ -109,20 +109,20 @@ export function FolderPicker({ visible, rootPath, initialPath, onCancel, onPick 
         </TouchableWithoutFeedback>
         <View style={styles.sheet}>
           <View style={styles.header}>
-            <TouchableOpacity onPress={onCancel}>
+            <Focusable onPress={onCancel}>
               <Text style={styles.cancel}>Cancel</Text>
-            </TouchableOpacity>
+            </Focusable>
             <Text style={styles.title}>Pick folder</Text>
-            <TouchableOpacity onPress={() => onPick(path)}>
+            <Focusable onPress={() => onPick(path)}>
               <Text style={styles.pick}>Use</Text>
-            </TouchableOpacity>
+            </Focusable>
           </View>
 
           <View style={styles.pathBar}>
             {!isRoot && (
-              <TouchableOpacity onPress={goUp} style={styles.upBtn}>
+              <Focusable onPress={goUp} style={styles.upBtn}>
                 <Text style={styles.upText}>↑</Text>
-              </TouchableOpacity>
+              </Focusable>
             )}
             <Text style={styles.pathText} numberOfLines={1}>
               {displayPath}
@@ -144,11 +144,11 @@ export function FolderPicker({ visible, rootPath, initialPath, onCancel, onPick 
                 <Text style={styles.empty}>No subfolders here - tap "New folder" to create one.</Text>
               }
               renderItem={({ item }) => (
-                <TouchableOpacity style={styles.row} onPress={() => openSubdir(item.name)}>
+                <Focusable style={styles.row} onPress={() => openSubdir(item.name)}>
                   <Icon name="folder" size={18} color={colors.textDim} />
                   <Text style={styles.rowName} numberOfLines={1}>{item.name}</Text>
                   <Text style={styles.rowArrow}>›</Text>
-                </TouchableOpacity>
+                </Focusable>
               )}
             />
           )}
@@ -167,10 +167,10 @@ export function FolderPicker({ visible, rootPath, initialPath, onCancel, onPick 
                   autoCorrect={false}
                   autoCapitalize="none"
                 />
-                <TouchableOpacity onPress={createFolder} style={styles.createBtn}>
+                <Focusable onPress={createFolder} style={styles.createBtn}>
                   <Text style={styles.createBtnText}>Create</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
+                </Focusable>
+                <Focusable
                   onPress={() => {
                     setCreating(false);
                     setNewName('');
@@ -178,12 +178,12 @@ export function FolderPicker({ visible, rootPath, initialPath, onCancel, onPick 
                   style={styles.createCancel}
                 >
                   <Text style={styles.createCancelText}>✕</Text>
-                </TouchableOpacity>
+                </Focusable>
               </View>
             ) : (
-              <TouchableOpacity style={styles.newFolderBtn} onPress={() => setCreating(true)}>
+              <Focusable style={styles.newFolderBtn} onPress={() => setCreating(true)}>
                 <Text style={styles.newFolderText}>+ New folder</Text>
-              </TouchableOpacity>
+              </Focusable>
             )}
           </View>
         </View>

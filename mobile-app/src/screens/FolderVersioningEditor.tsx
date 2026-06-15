@@ -6,9 +6,9 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
+import { Focusable } from '../components/Focusable';
 import { useSyncthingClient } from '../daemon/SyncthingContext';
 import type { FolderConfig, FolderVersioning } from '../api/types';
 import { colors } from '../components/ui';
@@ -191,19 +191,19 @@ export function FolderVersioningEditor({ folder, onBack, onSaved }: Props) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={cancel} hitSlop={8}>
+        <Focusable onPress={cancel} hitSlop={8}>
           <Text style={styles.back}>‹ Back</Text>
-        </TouchableOpacity>
+        </Focusable>
         <Text style={styles.title} numberOfLines={1}>
           File versioning
         </Text>
-        <TouchableOpacity onPress={save} disabled={!dirty || saving} hitSlop={8}>
+        <Focusable onPress={save} disabled={!dirty || saving} hitSlop={8}>
           {saving ? (
             <ActivityIndicator color={colors.accent} />
           ) : (
             <Text style={[styles.saveBtn, !dirty && styles.saveBtnDisabled]}>Save</Text>
           )}
-        </TouchableOpacity>
+        </Focusable>
       </View>
 
       <Text style={styles.folderLabel} numberOfLines={1}>
@@ -218,7 +218,7 @@ export function FolderVersioningEditor({ folder, onBack, onSaved }: Props) {
           {TYPES.map(opt => {
             const on = opt.value === type;
             return (
-              <TouchableOpacity
+              <Focusable
                 key={opt.value || 'none'}
                 style={[styles.typeRow, on && styles.typeRowOn]}
                 onPress={() => setType(opt.value)}
@@ -231,7 +231,7 @@ export function FolderVersioningEditor({ folder, onBack, onSaved }: Props) {
                   <Text style={[styles.typeLabel, on && styles.typeLabelOn]}>{opt.label}</Text>
                   <Text style={styles.typeHint}>{opt.hint}</Text>
                 </View>
-              </TouchableOpacity>
+              </Focusable>
             );
           })}
         </View>

@@ -11,9 +11,9 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
+import { Focusable } from '../components/Focusable';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -208,9 +208,9 @@ export function SearchModal({ visible, onClose }: Props) {
               autoCapitalize="none"
               returnKeyType="search"
             />
-            <TouchableOpacity onPress={onClose} hitSlop={10}>
+            <Focusable onPress={onClose} hitSlop={10}>
               <Text style={styles.cancelBtn}>Cancel</Text>
-            </TouchableOpacity>
+            </Focusable>
           </View>
 
           {folders.length > 1 && (
@@ -223,14 +223,14 @@ export function SearchModal({ visible, onClose }: Props) {
               renderItem={({ item }) => {
                 const active = scopeFolder === (item.id || null);
                 return (
-                  <TouchableOpacity
+                  <Focusable
                     style={[styles.scopeChip, active && styles.scopeChipOn]}
                     onPress={() => setScopeFolder(item.id || null)}
                   >
                     <Text style={[styles.scopeText, active && styles.scopeTextOn]}>
                       {item.label || item.id}
                     </Text>
-                  </TouchableOpacity>
+                  </Focusable>
                 );
               }}
             />
@@ -256,12 +256,12 @@ export function SearchModal({ visible, onClose }: Props) {
           <View style={styles.recentWrap}>
             <View style={styles.recentHeader}>
               <Text style={styles.recentTitle}>Recent searches</Text>
-              <TouchableOpacity onPress={clearRecent}>
+              <Focusable onPress={clearRecent}>
                 <Text style={styles.recentClear}>Clear</Text>
-              </TouchableOpacity>
+              </Focusable>
             </View>
             {recent.map(term => (
-              <TouchableOpacity
+              <Focusable
                 key={term}
                 style={styles.recentRow}
                 onPress={() => {
@@ -271,7 +271,7 @@ export function SearchModal({ visible, onClose }: Props) {
               >
                 <Icon name="time" size={14} color={colors.textDim} />
                 <Text style={styles.recentText} numberOfLines={1}>{term}</Text>
-              </TouchableOpacity>
+              </Focusable>
             ))}
           </View>
         ) : debouncedQuery && results.length === 0 && !indexing ? (
@@ -280,9 +280,9 @@ export function SearchModal({ visible, onClose }: Props) {
               No files matching "{debouncedQuery}"
             </Text>
             {scopeFolder && (
-              <TouchableOpacity onPress={() => setScopeFolder(null)}>
+              <Focusable onPress={() => setScopeFolder(null)}>
                 <Text style={styles.emptyAction}>Search all folders</Text>
-              </TouchableOpacity>
+              </Focusable>
             )}
           </View>
         ) : (
@@ -299,7 +299,7 @@ export function SearchModal({ visible, onClose }: Props) {
               const uri = onDiskUri(item.resolvedFolderPath, item.path);
               const showThumb = !dir && kind === 'image';
               return (
-                <TouchableOpacity
+                <Focusable
                   style={styles.row}
                   onPress={() => openResult(item)}
                   onLongPress={() => showActions(item)}
@@ -327,7 +327,7 @@ export function SearchModal({ visible, onClose }: Props) {
                       {formatModTime(item.entry.modTime)}
                     </Text>
                   </View>
-                </TouchableOpacity>
+                </Focusable>
               );
             }}
             ListFooterComponent={

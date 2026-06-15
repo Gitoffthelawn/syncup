@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AppState, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { AppState, Platform, StyleSheet, Text, View } from 'react-native';
+import { Focusable } from '../components/Focusable';
 import GoBridge from '../GoServerBridgeJSI';
 import { FormModal } from '../components/FormModal';
 import { Field } from '../components/Field';
@@ -303,7 +304,7 @@ export function AddFolderModal({ visible, onClose, onAdded }: Props) {
         submitDisabled={!canSubmit}
       >
         <Text style={styles.sectionLabel}>Location</Text>
-        <TouchableOpacity
+        <Focusable
           style={[styles.pickerBtn, !path && styles.pickerBtnEmpty]}
           onPress={pickPrimary}
         >
@@ -311,7 +312,7 @@ export function AddFolderModal({ visible, onClose, onAdded }: Props) {
             {displayPath || 'Pick a folder on this device…'}
           </Text>
           <Text style={styles.pickerArrow}>›</Text>
-        </TouchableOpacity>
+        </Focusable>
         <Text style={styles.hint}>
           {isExternal
             ? 'Syncing directly with this device folder.'
@@ -326,18 +327,18 @@ export function AddFolderModal({ visible, onClose, onAdded }: Props) {
               Android's system folder picker hides Downloads and other shared folders. Grant All
               Files Access to browse them directly.
             </Text>
-            <TouchableOpacity style={styles.permBannerBtn} onPress={requestAllFilesAccess}>
+            <Focusable style={styles.permBannerBtn} onPress={requestAllFilesAccess}>
               <Text style={styles.permBannerBtnText}>Grant All Files Access</Text>
-            </TouchableOpacity>
+            </Focusable>
           </View>
         )}
         {Platform.OS === 'android' && hasAllFilesAccess && !isExternal && (
-          <TouchableOpacity style={styles.safBtn} onPress={pickExternal}>
+          <Focusable style={styles.safBtn} onPress={pickExternal}>
             <Text style={styles.safBtnText}>Pick a cloud or SD-card folder (SAF)</Text>
-          </TouchableOpacity>
+          </Focusable>
         )}
         {isExternal ? (
-          <TouchableOpacity
+          <Focusable
             style={styles.safBtn}
             onPress={() => {
               setIsExternal(false);
@@ -346,15 +347,15 @@ export function AddFolderModal({ visible, onClose, onAdded }: Props) {
             }}
           >
             <Text style={styles.safBtnText}>Use app storage instead</Text>
-          </TouchableOpacity>
+          </Focusable>
         ) : (
-          <TouchableOpacity
+          <Focusable
             style={styles.safBtn}
             onPress={() => setPickerOpen(true)}
             disabled={!pickerRoot}
           >
             <Text style={styles.safBtnText}>Use app storage instead</Text>
-          </TouchableOpacity>
+          </Focusable>
         )}
 
         {path && (
@@ -393,7 +394,7 @@ export function AddFolderModal({ visible, onClose, onAdded }: Props) {
                     under <Text style={styles.mono}>Obsidian/</Text> in app storage makes it
                     reliably visible.
                   </Text>
-                  <TouchableOpacity
+                  <Focusable
                     style={styles.obsidianHintBtn}
                     onPress={() => {
                       const slug = slugify(label || basename(path) || 'vault') || 'vault';
@@ -404,7 +405,7 @@ export function AddFolderModal({ visible, onClose, onAdded }: Props) {
                     <Text style={styles.obsidianHintBtnText}>
                       Use Obsidian/{slugify(label || basename(path) || 'vault') || 'vault'}
                     </Text>
-                  </TouchableOpacity>
+                  </Focusable>
                 </View>
               )}
           </>
@@ -416,7 +417,7 @@ export function AddFolderModal({ visible, onClose, onAdded }: Props) {
             {peerDevices.map(d => {
               const on = selectedPeers.has(d.deviceID);
               return (
-                <TouchableOpacity
+                <Focusable
                   key={d.deviceID}
                   style={[styles.peer, on && styles.peerOn]}
                   onPress={() => togglePeer(d.deviceID)}
@@ -428,21 +429,21 @@ export function AddFolderModal({ visible, onClose, onAdded }: Props) {
                   <View style={[styles.checkbox, on && styles.checkboxOn]}>
                     {on && <Text style={styles.checkmark}>✓</Text>}
                   </View>
-                </TouchableOpacity>
+                </Focusable>
               );
             })}
           </>
         )}
 
         {path && (
-          <TouchableOpacity
+          <Focusable
             style={styles.advancedToggle}
             onPress={() => setShowAdvanced(v => !v)}
           >
             <Text style={styles.advancedToggleText}>
               {showAdvanced ? '▾ Advanced' : '▸ Advanced'}
             </Text>
-          </TouchableOpacity>
+          </Focusable>
         )}
 
         {showAdvanced && (
@@ -519,7 +520,7 @@ function PresetChip({
   onPress: () => void;
 }) {
   return (
-    <TouchableOpacity
+    <Focusable
       style={[styles.presetChip, active && styles.presetChipOn]}
       onPress={onPress}
     >
@@ -529,7 +530,7 @@ function PresetChip({
       <Text style={[styles.presetChipHint, active && styles.presetChipHintOn]}>
         {hint}
       </Text>
-    </TouchableOpacity>
+    </Focusable>
   );
 }
 

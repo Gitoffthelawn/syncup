@@ -4,9 +4,9 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
+import { Focusable } from '../components/Focusable';
 import { useSyncthing, useSyncthingClient } from '../daemon/SyncthingContext';
 import type { Completion, DbStatus, DeviceConfig, FolderConfig } from '../api/types';
 import { colors, formatBytes, Progress } from '../components/ui';
@@ -66,13 +66,13 @@ export function FolderStatistics({ folder, status, onBack }: Props) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} hitSlop={8}>
+        <Focusable onPress={onBack} hitSlop={8}>
           <Text style={styles.back}>‹ Back</Text>
-        </TouchableOpacity>
+        </Focusable>
         <Text style={styles.title} numberOfLines={1}>Statistics</Text>
-        <TouchableOpacity onPress={load} hitSlop={8}>
+        <Focusable onPress={load} hitSlop={8}>
           <Text style={styles.refresh}>Refresh</Text>
-        </TouchableOpacity>
+        </Focusable>
       </View>
 
       <ScrollView contentContainerStyle={styles.body}>

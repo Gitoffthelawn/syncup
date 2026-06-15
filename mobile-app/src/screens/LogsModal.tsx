@@ -4,11 +4,11 @@ import {
   Modal,
   StyleSheet,
   Text,
-  TouchableOpacity,
   TouchableWithoutFeedback,
   useWindowDimensions,
   View,
 } from 'react-native';
+import { Focusable } from '../components/Focusable';
 import { FlashList } from '@shopify/flash-list';
 import { useSyncthingClient } from '../daemon/SyncthingContext';
 import type { SystemLogMessage } from '../api/types';
@@ -125,23 +125,23 @@ export function LogsModal({ visible, onClose }: Props) {
         </TouchableWithoutFeedback>
         <View style={[styles.sheet, { height: sheetHeight }]}>
           <View style={styles.header}>
-            <TouchableOpacity onPress={onClose} hitSlop={8}>
+            <Focusable onPress={onClose} hitSlop={8}>
               <Text style={styles.cancel}>Close</Text>
-            </TouchableOpacity>
+            </Focusable>
             <Text style={styles.title} numberOfLines={1}>
               Daemon log
             </Text>
             <View style={styles.headerActions}>
-              <TouchableOpacity
+              <Focusable
                 onPress={() => setPaused(p => !p)}
                 hitSlop={8}
                 style={styles.headerBtn}
               >
                 <Text style={styles.headerBtnText}>{paused ? 'Resume' : 'Pause'}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={clear} hitSlop={8} style={styles.headerBtn}>
+              </Focusable>
+              <Focusable onPress={clear} hitSlop={8} style={styles.headerBtn}>
                 <Text style={styles.headerBtnText}>Clear</Text>
-              </TouchableOpacity>
+              </Focusable>
             </View>
           </View>
 

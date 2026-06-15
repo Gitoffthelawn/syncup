@@ -4,9 +4,9 @@ import {
   StyleSheet,
   Switch,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
+import { Focusable } from '../components/Focusable';
 import { FormModal } from '../components/FormModal';
 import { Field } from '../components/Field';
 import { colors } from '../components/ui';
@@ -127,12 +127,12 @@ export function AddDeviceModal({ visible, onClose, onAdded, initialDeviceId }: P
         submitting={submitting}
         submitDisabled={!idValid}
       >
-      <TouchableOpacity style={styles.scanBtn} onPress={() => setScannerOpen(true)}>
+      <Focusable style={styles.scanBtn} onPress={() => setScannerOpen(true)}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <Icon name="camera" size={18} color="#fff" />
           <Text style={styles.scanBtnText}>Scan QR code</Text>
         </View>
-      </TouchableOpacity>
+      </Focusable>
 
       {nearbyLoading ? (
         <View style={styles.nearbyLoading}>
@@ -143,7 +143,7 @@ export function AddDeviceModal({ visible, onClose, onAdded, initialDeviceId }: P
         <View style={styles.nearbySection}>
           <Text style={styles.nearbySectionTitle}>Nearby devices</Text>
           {nearby.map(d => (
-            <TouchableOpacity
+            <Focusable
               key={d.deviceId}
               style={styles.nearbyRow}
               onPress={() => setDeviceId(d.deviceId)}
@@ -157,7 +157,7 @@ export function AddDeviceModal({ visible, onClose, onAdded, initialDeviceId }: P
                 </Text>
               </View>
               <Text style={styles.nearbyUse}>Use</Text>
-            </TouchableOpacity>
+            </Focusable>
           ))}
         </View>
       ) : null}

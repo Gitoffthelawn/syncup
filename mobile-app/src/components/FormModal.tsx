@@ -5,11 +5,11 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   TouchableWithoutFeedback,
   useWindowDimensions,
   View,
 } from 'react-native';
+import { Focusable } from './Focusable';
 import { colors } from './ui';
 import { useKeyboardHeight } from '../hooks/useKeyboardHeight';
 
@@ -53,11 +53,11 @@ export function FormModal({
         </TouchableWithoutFeedback>
         <View style={[styles.sheet, { maxHeight: maxSheetHeight }]}>
           <View style={styles.header}>
-            <TouchableOpacity onPress={onCancel}>
+            <Focusable onPress={onCancel}>
               <Text style={styles.cancel}>Cancel</Text>
-            </TouchableOpacity>
+            </Focusable>
             <Text style={styles.title}>{title}</Text>
-            <TouchableOpacity onPress={onSubmit} disabled={submitDisabled || submitting}>
+            <Focusable onPress={onSubmit} disabled={submitDisabled || submitting}>
               {submitting ? (
                 <ActivityIndicator color={colors.accent} />
               ) : (
@@ -65,7 +65,7 @@ export function FormModal({
                   {submitLabel}
                 </Text>
               )}
-            </TouchableOpacity>
+            </Focusable>
           </View>
           <ScrollView
             contentContainerStyle={styles.body}
