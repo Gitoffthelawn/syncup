@@ -122,7 +122,7 @@ jobs:
       - name: Lint and typecheck
         run: |
           cd mobile-app && yarn install --immutable && yarn lint && yarn typecheck
-          cd ../backend && go vet -tags noassets ./...
+          cd ../backend && make vet
 
   build-apk:
     name: build ${{ matrix.abi }}
