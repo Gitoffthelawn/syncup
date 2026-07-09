@@ -31,6 +31,12 @@
 - (NSString * _Nonnull)importFileBlockingWithDestinationPath:(NSString * _Nonnull)destinationPath;
 @end
 
+@interface KeepAliveManager : NSObject
++ (instancetype _Nonnull)shared;
++ (BOOL)isEnabled;
+- (void)setEnabled:(BOOL)enabled;
+@end
+
 static NSString * const kNotifiedErrorCountsKey = @"com.siddarthkay.syncup.notifiedErrorCounts";
 static NSString * const kVaultRegistryKey = @"com.siddarthkay.syncup.vaultRegistry";
 static NSString * const kNotifiedVaultStaleKey = @"com.siddarthkay.syncup.notifiedVaultStale";
@@ -262,6 +268,14 @@ static Class GobridgeMobileAPIClass;
 + (BOOL)setWifiOnlySync:(BOOL)enabled { return NO; }
 + (BOOL)getChargingOnlySync { return NO; }
 + (BOOL)setChargingOnlySync:(BOOL)enabled { return NO; }
+
++ (BOOL)getContinuousBackgroundSync {
+  return [KeepAliveManager isEnabled];
+}
++ (BOOL)setContinuousBackgroundSync:(BOOL)enabled {
+  [[KeepAliveManager shared] setEnabled:enabled];
+  return [KeepAliveManager isEnabled];
+}
 + (BOOL)openBatteryOptimizationSettings { return NO; }
 + (BOOL)isIgnoringBatteryOptimizations { return YES; }
 + (BOOL)openFolderInFileManager:(NSString *)path { return NO; }

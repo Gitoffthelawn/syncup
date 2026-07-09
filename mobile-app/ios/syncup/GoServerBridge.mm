@@ -100,6 +100,14 @@ bool GoServerBridgeImpl::setChargingOnlySync(facebook::jsi::Runtime &rt, bool en
     return [GoBridgeWrapper setChargingOnlySync:(enabled ? YES : NO)];
 }
 
+bool GoServerBridgeImpl::getContinuousBackgroundSync(facebook::jsi::Runtime &rt) {
+    return [GoBridgeWrapper getContinuousBackgroundSync];
+}
+
+bool GoServerBridgeImpl::setContinuousBackgroundSync(facebook::jsi::Runtime &rt, bool enabled) {
+    return [GoBridgeWrapper setContinuousBackgroundSync:(enabled ? YES : NO)];
+}
+
 bool GoServerBridgeImpl::getAllowMeteredWifi(facebook::jsi::Runtime &rt) {
     return [[NSUserDefaults standardUserDefaults] boolForKey:@"syncthing.allowMeteredWifi"];
 }

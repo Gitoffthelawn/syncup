@@ -20,6 +20,8 @@ export interface Spec extends TurboModule {
   readonly setWifiOnlySync: (enabled: boolean) => boolean;
   readonly getChargingOnlySync: () => boolean;
   readonly setChargingOnlySync: (enabled: boolean) => boolean;
+  readonly getContinuousBackgroundSync: () => boolean;
+  readonly setContinuousBackgroundSync: (enabled: boolean) => boolean;
   readonly getAllowMeteredWifi: () => boolean;
   readonly setAllowMeteredWifi: (enabled: boolean) => boolean;
   readonly getAllowMobileData: () => boolean;

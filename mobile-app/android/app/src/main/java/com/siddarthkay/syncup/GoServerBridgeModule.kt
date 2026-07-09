@@ -171,6 +171,17 @@ class GoServerBridgeModule(reactContext: ReactApplicationContext) :
         return true
     }
 
+    // iOS-only behaviour; on Android the foreground service already keeps the
+    // daemon resident, so we just persist the flag for settings parity.
+    override fun getContinuousBackgroundSync(): Boolean {
+        return SyncthingPrefs.getContinuousBackgroundSync(ctx)
+    }
+
+    override fun setContinuousBackgroundSync(enabled: Boolean): Boolean {
+        SyncthingPrefs.setContinuousBackgroundSync(ctx, enabled)
+        return SyncthingPrefs.getContinuousBackgroundSync(ctx)
+    }
+
     override fun getChargingOnlySync(): Boolean {
         return SyncthingPrefs.getChargingOnlySync(ctx)
     }

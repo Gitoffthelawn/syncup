@@ -12,6 +12,7 @@ object SyncthingPrefs {
     private const val KEY_ALLOW_MOBILE_DATA = "allow_mobile_data"
     private const val KEY_EXTERNAL_CONTROL = "external_control_enabled"
     private const val KEY_START_ON_BOOT = "start_on_boot_enabled"
+    private const val KEY_CONTINUOUS_BG_SYNC = "continuous_background_sync"
 
     private fun prefs(context: Context): SharedPreferences =
         context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -64,6 +65,16 @@ object SyncthingPrefs {
         prefs(context).edit().putBoolean(KEY_START_ON_BOOT, value).apply()
     }
 
+    // iOS-only behaviour (silent-audio keep-alive). On Android the foreground
+    // service already keeps the daemon resident, so this is just a persisted
+    // flag kept for cross-platform parity of the settings surface.
+    fun getContinuousBackgroundSync(context: Context): Boolean =
+        prefs(context).getBoolean(KEY_CONTINUOUS_BG_SYNC, false)
+
+    fun setContinuousBackgroundSync(context: Context, value: Boolean) {
+        prefs(context).edit().putBoolean(KEY_CONTINUOUS_BG_SYNC, value).apply()
+    }
+
     private val backupKeys = listOf(
         KEY_WIFI_ONLY_SYNC,
         KEY_CHARGING_ONLY_SYNC,
@@ -71,6 +82,7 @@ object SyncthingPrefs {
         KEY_ALLOW_MOBILE_DATA,
         KEY_EXTERNAL_CONTROL,
         KEY_START_ON_BOOT,
+        KEY_CONTINUOUS_BG_SYNC,
     )
 
     fun exportAsJson(context: Context): String {

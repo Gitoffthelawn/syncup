@@ -27,6 +27,8 @@ public:
     bool setWifiOnlySync(facebook::jsi::Runtime &rt, bool enabled);
     bool getChargingOnlySync(facebook::jsi::Runtime &rt);
     bool setChargingOnlySync(facebook::jsi::Runtime &rt, bool enabled);
+    bool getContinuousBackgroundSync(facebook::jsi::Runtime &rt);
+    bool setContinuousBackgroundSync(facebook::jsi::Runtime &rt, bool enabled);
     bool getAllowMeteredWifi(facebook::jsi::Runtime &rt);
     bool setAllowMeteredWifi(facebook::jsi::Runtime &rt, bool enabled);
     bool getAllowMobileData(facebook::jsi::Runtime &rt);

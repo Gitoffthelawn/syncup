@@ -72,6 +72,7 @@ export function SettingsScreen() {
   const [batteryExempt, setBatteryExempt] = useState<boolean>(false);
   const [externalControl, setExternalControl] = useState<boolean>(false);
   const [startOnBoot, setStartOnBoot] = useState<boolean>(false);
+  const [continuousBg, setContinuousBg] = useState<boolean>(false);
   useEffect(() => {
     try {
       setWifiOnly(GoBridge.getWifiOnlySync());
@@ -80,6 +81,7 @@ export function SettingsScreen() {
       setAllowMobile(GoBridge.getAllowMobileData());
       setExternalControl(GoBridge.getExternalControlEnabled());
       setStartOnBoot(GoBridge.getStartOnBoot());
+      setContinuousBg(GoBridge.getContinuousBackgroundSync());
     } catch {
       // ignore - stays false
     }
@@ -157,6 +159,32 @@ export function SettingsScreen() {
       return;
     }
     writeExternalControl(false);
+  };
+
+  const writeContinuousBg = (next: boolean) => {
+    setContinuousBg(next);
+    try {
+      const persisted = GoBridge.setContinuousBackgroundSync(next);
+      setContinuousBg(persisted);
+    } catch (e) {
+      Alert.alert('Could not change setting', e instanceof Error ? e.message : String(e));
+      setContinuousBg(!next);
+    }
+  };
+
+  const toggleContinuousBg = (value: boolean) => {
+    if (value) {
+      Alert.alert(
+        'Keep syncing in the background?',
+        'SyncUp will stay active so folders keep syncing even when the app is not open.\n\nThis uses noticeably more battery, because the sync engine and network stay awake continuously. Leave it off unless you need near-instant background sync and accept the battery cost.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Enable', onPress: () => writeContinuousBg(true) },
+        ],
+      );
+      return;
+    }
+    writeContinuousBg(false);
   };
 
   const openBatterySettings = () => {
@@ -554,6 +582,25 @@ export function SettingsScreen() {
             </>
           )}
         </Card>
+
+      {Platform.OS === 'ios' && (
+        <Card>
+          <CardTitle>Background</CardTitle>
+          <View style={styles.switchRow}>
+            <View style={{ flex: 1, paddingRight: 12 }}>
+              <Text style={styles.switchLabel}>Continuous background sync</Text>
+              <Text style={styles.switchHint}>
+                Off by default. When on, SyncUp keeps syncing while backgrounded instead of only in the brief windows iOS normally allows, closer to how it behaves on Android. Uses noticeably more battery, since the sync engine and network stay awake continuously.
+              </Text>
+            </View>
+            <Switch
+              value={continuousBg}
+              onValueChange={toggleContinuousBg}
+              trackColor={{ false: colors.border, true: colors.accent }}
+            />
+          </View>
+        </Card>
+      )}
 
       {isAndroid && !batteryExempt && (
         <Card>

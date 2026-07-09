@@ -22,6 +22,7 @@ public class AppDelegate: ExpoAppDelegate {
     BackgroundManager.shared.register()
     BackgroundManager.shared.scheduleNext()
 
+    KeepAliveManager.shared.applyFromPreference()
     // Request notification authorization at foreground so the BG path
     // (folder errors, stale vault watchdog) never has to prompt — BG tasks
     // can't show UI, and the lazy prompt would silently no-op.
@@ -60,10 +61,15 @@ public class AppDelegate: ExpoAppDelegate {
     super.applicationDidEnterBackground(application)
     // re-submit request on every backgrounding; iOS drops stale ones.
     BackgroundManager.shared.scheduleNext()
+    // Hold the ~30s guaranteed window so a sync started just before backgrounding
+    // (e.g. a file the user just created) finishes pushing instead of freezing.
+    BackgroundManager.shared.startBackgroundLinger()
+    KeepAliveManager.shared.applyFromPreference()
   }
 
   public override func applicationWillEnterForeground(_ application: UIApplication) {
     super.applicationWillEnterForeground(application)
+    BackgroundManager.shared.cancelBackgroundLinger()
     // BG task may have drained the daemon (SQLite WAL); restart before first REST call lands.
     _ = GoBridgeWrapper.startServer()
   }

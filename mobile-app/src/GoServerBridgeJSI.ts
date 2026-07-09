@@ -19,6 +19,8 @@ export interface GoServerBridgeInterface {
   setWifiOnlySync(enabled: boolean): boolean;
   getChargingOnlySync(): boolean;
   setChargingOnlySync(enabled: boolean): boolean;
+  getContinuousBackgroundSync(): boolean;
+  setContinuousBackgroundSync(enabled: boolean): boolean;
   getAllowMeteredWifi(): boolean;
   setAllowMeteredWifi(enabled: boolean): boolean;
   getAllowMobileData(): boolean;
@@ -126,6 +128,14 @@ class GoServerBridgeJSI implements GoServerBridgeInterface {
 
   setChargingOnlySync(enabled: boolean): boolean {
     return NativeGoServerBridge.setChargingOnlySync(enabled);
+  }
+
+  getContinuousBackgroundSync(): boolean {
+    return NativeGoServerBridge.getContinuousBackgroundSync();
+  }
+
+  setContinuousBackgroundSync(enabled: boolean): boolean {
+    return NativeGoServerBridge.setContinuousBackgroundSync(enabled);
   }
 
   getAllowMeteredWifi(): boolean {

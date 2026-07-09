@@ -20,6 +20,8 @@
 + (BOOL)setWifiOnlySync:(BOOL)enabled;
 + (BOOL)getChargingOnlySync;
 + (BOOL)setChargingOnlySync:(BOOL)enabled;
++ (BOOL)getContinuousBackgroundSync;
++ (BOOL)setContinuousBackgroundSync:(BOOL)enabled;
 + (BOOL)openBatteryOptimizationSettings;
 + (BOOL)isIgnoringBatteryOptimizations;
 + (BOOL)openFolderInFileManager:(NSString *)path;
