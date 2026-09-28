@@ -73,6 +73,29 @@
     <string>SyncUp discovers peer devices on your local network to sync files directly without a server.</string>
     <key>RCTNewArchEnabled</key>
     <true/>
+    <!--
+      UIScene lifecycle. Required for apps linked against the iOS 27 SDK:
+      without it iOS 27 traps at launch in
+      _UIApplicationEvaluateRuntimeIssueForNoSceneLifecycleAdoption.
+      The window + React Native root are created in SceneDelegate.swift.
+    -->
+    <key>UIApplicationSceneManifest</key>
+    <dict>
+      <key>UIApplicationSupportsMultipleScenes</key>
+      <false/>
+      <key>UISceneConfigurations</key>
+      <dict>
+        <key>UIWindowSceneSessionRoleApplication</key>
+        <array>
+          <dict>
+            <key>UISceneConfigurationName</key>
+            <string>Default Configuration</string>
+            <key>UISceneDelegateClassName</key>
+            <string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
+          </dict>
+        </array>
+      </dict>
+    </dict>
     <key>UIBackgroundModes</key>
     <array>
       <string>fetch</string>

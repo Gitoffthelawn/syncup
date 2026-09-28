@@ -6,10 +6,14 @@ import UserNotifications
 
 @UIApplicationMain
 public class AppDelegate: ExpoAppDelegate {
+  // Owned by SceneDelegate under the UIScene lifecycle; kept here because
+  // UIKit and some libraries still read `delegate.window`.
   var window: UIWindow?
 
   var reactNativeDelegate: ExpoReactNativeFactoryDelegate?
   var reactNativeFactory: RCTReactNativeFactory?
+  /// Retained so SceneDelegate can hand them to startReactNative when the scene connects.
+  var launchOptions: [UIApplication.LaunchOptionsKey: Any]?
 
   public override func application(
     _ application: UIApplication,
@@ -44,17 +48,18 @@ public class AppDelegate: ExpoAppDelegate {
 
     reactNativeDelegate = delegate
     reactNativeFactory = factory
+    self.launchOptions = launchOptions
 
-#if os(iOS) || os(tvOS)
-    window = UIWindow(frame: UIScreen.main.bounds)
-    factory.startReactNative(
-      withModuleName: "main",
-      in: window,
-      launchOptions: launchOptions)
-#endif
+    // Window creation + startReactNative live in SceneDelegate.scene(_:willConnectTo:options:).
+    // iOS 27 refuses to launch SDK-27-linked apps that build the window here without
+    // adopting UIScene (see UIApplicationSceneManifest in Info.plist).
 
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
+
+  // NOTE: with a scene manifest present UIKit no longer calls the app-level
+  // background/foreground/active callbacks; SceneDelegate forwards its scene
+  // callbacks here so the logic (and Expo subscriber fan-out via super) is unchanged.
 
   public override func applicationDidEnterBackground(_ application: UIApplication) {
     super.applicationDidEnterBackground(application)

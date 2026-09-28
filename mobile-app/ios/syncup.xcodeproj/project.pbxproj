@@ -22,6 +22,7 @@
 		G0S1234567890ABC12345678 /* GoServerBridge.mm in Sources */ = {isa = PBXBuildFile; fileRef = G0S1234567890ABC12345679 /* GoServerBridge.mm */; };
 		KA01234567890ABC12345002 /* KeepAliveManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = KA01234567890ABC12345001 /* KeepAliveManager.swift */; };
 		QL01234567890ABC12345002 /* QuickLookPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = QL01234567890ABC12345001 /* QuickLookPresenter.swift */; };
+		SD01234567890ABC12345002 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = SD01234567890ABC12345001 /* SceneDelegate.swift */; };
 		SF01234567890ABC12345002 /* ScopedFolderStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = SF01234567890ABC12345001 /* ScopedFolderStore.swift */; };
 /* End PBXBuildFile section */
 
@@ -48,6 +49,7 @@
 		G0S1234567890ABC12345680 /* GoServerBridge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = GoServerBridge.h; path = syncup/GoServerBridge.h; sourceTree = "<group>"; };
 		KA01234567890ABC12345001 /* KeepAliveManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = KeepAliveManager.swift; path = syncup/KeepAliveManager.swift; sourceTree = "<group>"; };
 		QL01234567890ABC12345001 /* QuickLookPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = QuickLookPresenter.swift; path = syncup/QuickLookPresenter.swift; sourceTree = "<group>"; };
+		SD01234567890ABC12345001 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SceneDelegate.swift; path = syncup/SceneDelegate.swift; sourceTree = "<group>"; };
 		SF01234567890ABC12345001 /* ScopedFolderStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ScopedFolderStore.swift; path = syncup/ScopedFolderStore.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -67,6 +69,7 @@
 			isa = PBXGroup;
 			children = (
 				F11748412D0307B40044C1D9 /* AppDelegate.swift */,
+				SD01234567890ABC12345001 /* SceneDelegate.swift */,
 				BM01234567890ABC12345001 /* BackgroundManager.swift */,
 				BM01234567890ABC12345003 /* BackgroundErrorNotifier.swift */,
 				BM01234567890ABC12345005 /* AppShortcuts.swift */,
@@ -367,6 +370,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
+				SD01234567890ABC12345002 /* SceneDelegate.swift in Sources */,
 				BM01234567890ABC12345002 /* BackgroundManager.swift in Sources */,
 				BM01234567890ABC12345004 /* BackgroundErrorNotifier.swift in Sources */,
 				BM01234567890ABC12345006 /* AppShortcuts.swift in Sources */,
