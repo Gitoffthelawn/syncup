@@ -128,7 +128,7 @@ ios-pr:
 #   APPDROP_PROJECT  - project bucket on appdrop (e.g. syncup-pr)
 #   APPDROP_NAME     - human-readable build name
 #   APPDROP_NOTES    - release notes shown on the install page
-#   APPDROP_EXPIRY   - days until the link expires (default 14)
+#   APPDROP_EXPIRY   - days until the link expires (default 90)
 #   APPDROP_VERSION  - npm spec to install; defaults to "latest"
 # Reads APPDROP_URL/APPDROP_TOKEN from env (CI provides them; locally export them).
 APPDROP_VERSION ?= latest
@@ -138,7 +138,7 @@ APPDROP_VERSION ?= latest
 APPDROP_RESOLVED := $(shell npm view appdrop-cli@$(APPDROP_VERSION) version 2>/dev/null)
 APPDROP_CACHE    := $(HOME)/.cache/appdrop-cli/$(APPDROP_RESOLVED)
 APPDROP_BIN      := $(APPDROP_CACHE)/node_modules/.bin/appdrop
-APPDROP_EXPIRY   ?= 14
+APPDROP_EXPIRY   ?= 90
 
 appdrop-upload:
 	@if [ -z "$(APPDROP_FILE)" ]; then echo "==> APPDROP_FILE is required" >&2; exit 1; fi

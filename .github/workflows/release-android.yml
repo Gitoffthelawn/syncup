@@ -58,6 +58,7 @@ jobs:
           APPDROP_PROJECT: syncup-pr-android
           APPDROP_NAME: SyncUp Android PR #${{ github.event.pull_request.number }}
           APPDROP_NOTES: PR #${{ github.event.pull_request.number }} @ ${{ github.event.pull_request.head.sha }}
+          APPDROP_EXPIRY: 90
         run: |
           OUT=$(make appdrop-upload)
           echo "$OUT"
